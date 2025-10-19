@@ -1,7 +1,12 @@
 import './RegisterForm.scss'
 import { useState } from 'react'
+import { useUser } from '../../contexts/UserContext'
+import { useNavigate } from 'react-router-dom'
 
-function RegisterForm({ onSuccess }) {
+function RegisterForm() {
+  const { register } = useUser()
+  const navigate = useNavigate()
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,7 +25,6 @@ function RegisterForm({ onSuccess }) {
       [name]: type === 'checkbox' ? checked : value
     }))
     
-    // Очищаем ошибку при изменении поля
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -60,9 +64,9 @@ function RegisterForm({ onSuccess }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (validateForm()) {
-      // Здесь будет логика регистрации
-      console.log('Регистрация:', formData)
-      if (onSuccess) onSuccess()
+      const newUser = register(formData)
+      // Редирект на страницу настройки профиля
+      navigate('/profile-setup')
     }
   }
 
