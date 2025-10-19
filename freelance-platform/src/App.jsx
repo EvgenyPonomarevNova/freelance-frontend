@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
-import './App.css'
+import './App.scss'
+import Header from './components/Header/Header'
+import Footer from './components/Footer/Footer'
 
 function App() {
   return (
     <div className="app">
-      <h1>🎉 Успех! React работает!</h1>
-      <p>Моя биржа фриланса начинается здесь</p>
-      <div className="project-card">
-        <h3>Первый проект</h3>
-        <p>Создать логотип для кофейни</p>
-        <button>Откликнуться</button>
-      </div>
+      <Header />
+      <main>
+        <h2>Добро пожаловать на биржу фриланса!</h2>
+        {/* Здесь будет основной контент */}
+      </main>
+      <Footer />
     </div>
   )
 }

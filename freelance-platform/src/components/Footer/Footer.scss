@@ -1,0 +1,58 @@
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  background: #34495e;
+  color: white;
+  margin-top: auto;
+  max-width: 1980px;
+  margin: 0 auto;
+
+    .footer-logo a {
+    margin: 0;
+    color: white;
+    font-size: 1.5rem;
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 2rem;
+
+    a {
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      font-size: 20px;
+
+      &:hover {
+        color: #3498db;
+      }
+    }
+  }
+  .partners {
+    display: flex;
+    gap: 2rem;
+
+    .partner-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+
+      img {
+        height: 40px; /* ← Увеличим размер */
+        width: auto;
+        border: 2px solid red; /* ← Рамка чтобы видеть область картинки */
+        background: white; /* ← Фон если SVG прозрачный */
+        padding: 5px;
+        border-radius: 4px;
+      }
+
+      span {
+        font-size: 0.8rem;
+        color: #ecf0f1;
+      }
+    }
+  }
+}

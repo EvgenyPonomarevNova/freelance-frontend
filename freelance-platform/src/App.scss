@@ -1,0 +1,19 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: #f8f9fa;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+main {
+  padding: 2rem;
+  margin: 0 auto;
+}
