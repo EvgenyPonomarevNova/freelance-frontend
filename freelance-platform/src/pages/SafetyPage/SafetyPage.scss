@@ -1,0 +1,239 @@
+.safety-page {
+  min-height: calc(100vh - 120px);
+  background: #0f0f23;
+  color: #e0e0e0;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 4rem;
+
+  .page-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 1rem;
+
+    .title-accent {
+      color: #667eea;
+      text-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  .page-subtitle {
+    font-size: 1.2rem;
+    color: #b0b0c0;
+    margin: 0;
+  }
+}
+
+.safety-content {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.safety-section {
+  margin-bottom: 3rem;
+  padding: 2.5rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+  }
+
+  &.tips {
+    border-color: #27ae60;
+    background: rgba(39, 174, 96, 0.05);
+  }
+
+  &.support {
+    text-align: center;
+    border-color: #f39c12;
+  }
+
+  h2 {
+    color: #ffffff;
+    font-size: 1.6rem;
+    margin-bottom: 2rem;
+    font-weight: 600;
+  }
+}
+
+.safety-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(102, 126, 234, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #667eea;
+      transform: translateX(5px);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.3));
+    }
+
+    .feature-text {
+      flex: 1;
+
+      h3 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+      }
+
+      p {
+        color: #b0b0c0;
+        line-height: 1.6;
+        margin: 0;
+      }
+    }
+  }
+}
+
+.privacy-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+
+  .privacy-item {
+    padding: 1.5rem;
+    background: rgba(52, 152, 219, 0.05);
+    border: 1px solid rgba(52, 152, 219, 0.2);
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #3498db;
+      transform: translateY(-3px);
+    }
+
+    h3 {
+      color: #3498db;
+      margin-bottom: 0.8rem;
+      font-size: 1.2rem;
+    }
+
+    p {
+      color: #b0b0c0;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+
+  .tip-card {
+    padding: 2rem;
+    background: rgba(39, 174, 96, 0.05);
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #27ae60;
+      transform: translateY(-3px);
+    }
+
+    h3 {
+      color: #27ae60;
+      margin-bottom: 1.5rem;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+        color: #b0b0c0;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(39, 174, 96, 0.1);
+
+        &:before {
+          content: "✅";
+          margin-right: 0.8rem;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+  }
+}
+
+.support {
+  p {
+    color: #b0b0c0;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+
+  .support-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.1rem;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .safety-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header .page-title {
+    font-size: 2.2rem;
+  }
+
+  .safety-section {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .feature {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem !important;
+  }
+
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+}
