@@ -21,6 +21,7 @@ function App() {
           <Route path="/rules" element={<RulesPage />} />
           <Route path="/safety" element={<SafetyPage />} />
           <Route path="/register" element={<AuthPage />} />
+          <Route path="/login" element={<AuthPage />} />
         </Routes>
         <Footer />
       </div>

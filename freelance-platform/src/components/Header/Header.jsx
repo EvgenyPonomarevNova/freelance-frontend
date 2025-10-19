@@ -16,7 +16,7 @@ function Header() {
         <Link to="/how-it-works">Как это работает</Link>
       </nav>
       <div className="auth-buttons">
-        <button className="login-btn">Войти</button>
+        <Link to="/login" className="login-btn">Войти</Link>
         <Link to="/register" className="register-btn">Регистрация</Link>
       </div>
     </header>

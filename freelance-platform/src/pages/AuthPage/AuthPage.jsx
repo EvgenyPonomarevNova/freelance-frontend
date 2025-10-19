@@ -1,20 +1,30 @@
 import './AuthPage.scss'
 import RegisterForm from '../../components/RegisterForm/RegisterForm'
+import LoginForm from '../../components/LoginForm/LoginForm'
+import { useLocation } from 'react-router-dom'
 
 function AuthPage() {
-  const handleRegisterSuccess = () => {
-    // Здесь будет редирект или уведомление об успешной регистрации
-    console.log('Регистрация успешна!')
+  const location = useLocation()
+  const isLogin = location.pathname === '/login'
+
+  const handleAuthSuccess = () => {
+    console.log(`${isLogin ? 'Вход' : 'Регистрация'} успешна!`)
+    // Здесь будет редирект
   }
 
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-hero">
-          <h1>Начните свой путь в <span className="accent">фрилансе</span></h1>
+          <h1>
+            {isLogin ? 'С возвращением!' : 'Начните свой путь в '}
+            {!isLogin && <span className="accent">фрилансе</span>}
+          </h1>
           <p>
-            Присоединяйтесь к сообществу профессионалов. 
-            Находите интересные проекты или надежных исполнителей.
+            {isLogin 
+              ? 'Войдите в свой аккаунт чтобы продолжить работу' 
+              : 'Присоединяйтесь к сообществу профессионалов. Находите интересные проекты или надежных исполнителей.'
+            }
           </p>
           <div className="hero-features">
             <div className="feature">
@@ -33,7 +43,11 @@ function AuthPage() {
         </div>
 
         <div className="auth-form-section">
-          <RegisterForm onSuccess={handleRegisterSuccess} />
+          {isLogin ? (
+            <LoginForm onSuccess={handleAuthSuccess} />
+          ) : (
+            <RegisterForm onSuccess={handleAuthSuccess} />
+          )}
         </div>
       </div>
     </div>
