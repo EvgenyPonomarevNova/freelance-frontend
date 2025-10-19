@@ -1,0 +1,137 @@
+.rules-page {
+  min-height: calc(100vh - 120px);
+  background: #0f0f23;
+  color: #e0e0e0;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 4rem;
+
+  .page-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 1rem;
+
+    .title-accent {
+      color: #667eea;
+      text-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  .page-subtitle {
+    font-size: 1.2rem;
+    color: #b0b0c0;
+    margin: 0;
+  }
+}
+
+.rules-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.rules-section {
+  margin-bottom: 3rem;
+  padding: 2.5rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+  }
+
+  &.warning {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.05);
+    
+    &:hover {
+      border-color: #e74c3c;
+      box-shadow: 0 8px 25px rgba(231, 76, 60, 0.1);
+    }
+  }
+
+  h2 {
+    color: #ffffff;
+    font-size: 1.6rem;
+    margin-bottom: 2rem;
+    font-weight: 600;
+  }
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .rule-item {
+    padding: 1.5rem;
+    background: rgba(102, 126, 234, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #667eea;
+      transform: translateX(5px);
+    }
+
+    h3 {
+      color: #667eea;
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    p {
+      color: #b0b0c0;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+}
+
+.prohibited-list {
+  list-style: none;
+  padding: 0;
+
+  li {
+    color: #e74c3c;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 8px;
+    font-weight: 500;
+    
+    &:before {
+      content: "❌";
+      margin-right: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .rules-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header .page-title {
+    font-size: 2.2rem;
+  }
+
+  .rules-section {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .rule-item {
+    padding: 1rem !important;
+  }
+}
