@@ -1,16 +1,17 @@
+import { Link } from 'react-router-dom'
 import "./Footer.scss";
 
 function Footer() {
   return (
     <footer className="footer">
       <div className="logo">
-        <img src="/images/logo/logo.svg" alt="NexusHub" className="logo-img" />
+        <img src="/images/logo.svg" alt="NexusHub" className="logo-img" />
         <h1>Nexus<span className="logo-accent">Hub</span></h1>
       </div>
       <nav className="footer-nav">
-        <a href="#">О проекте</a>
-        <a href="#rules">Правила</a>
-        <a href="#safety">Безопасность</a>
+        <Link to="/about">О проекте</Link>
+        <Link to="/rules">Правила</Link>
+        <Link to="/safety">Безопасность</Link>
       </nav>
       <div className="partners">
         <div className="partner-item">
