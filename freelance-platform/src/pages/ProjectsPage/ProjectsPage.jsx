@@ -59,7 +59,7 @@ function ProjectsPage() {
       id: 6,
       title: "SEO оптимизация интернет-магазина",
       description: "Комплексная SEO оптимизация существующего интернет-магазина. Аудит, исправление ошибок, составление семантического ядра.",
-      budget: 28000,
+      budget:  28000,
       skills: ["SEO", "Google Analytics", "Content Writing", "E-commerce"],
       category: "marketing",
       createdAt: "2 дня назад",

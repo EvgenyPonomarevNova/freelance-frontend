@@ -33,10 +33,10 @@
 
 .projects-controls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: row;
+  justify-content: center;
   gap: 2rem;
-  margin-bottom: 2.5rem;
+  padding-bottom: 2.5rem;
   flex-wrap: wrap;
 
   .search-box {
@@ -114,9 +114,10 @@
 
 .projects-stats {
   display: flex;
+  flex-direction: row;
+  justify-content: center;
   gap: 2rem;
   margin-bottom: 2rem;
-
   .stat {
     display: flex;
     align-items: center;
