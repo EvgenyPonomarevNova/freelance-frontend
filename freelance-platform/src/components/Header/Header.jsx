@@ -7,7 +7,7 @@ function Header() {
       <div className="logo">
         <img src="/images/logo/logo.svg" alt="NexusHub" className="logo-img" />
         <h1>
-          Nexus<span className="logo-accent">Hub</span>
+          Freelance<span className="logo-accent">Hub</span>
         </h1>
       </div>
       <nav className="nav">
@@ -17,7 +17,7 @@ function Header() {
       </nav>
       <div className="auth-buttons">
         <button className="login-btn">Войти</button>
-        <button className="register-btn">Регистрация</button>
+        <Link to="/register" className="register-btn">Регистрация</Link>
       </div>
     </header>
   );

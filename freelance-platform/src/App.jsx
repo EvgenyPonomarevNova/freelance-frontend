@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage/ProjectsPage'
 import AboutPage from './pages/AboutPage/AboutPage'
 import RulesPage from './pages/RulesPage/RulesPage'
 import SafetyPage from './pages/SafetyPage/SafetyPage'
+import AuthPage from './pages/AuthPage/AuthPage'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/rules" element={<RulesPage />} />
           <Route path="/safety" element={<SafetyPage />} />
+          <Route path="/register" element={<AuthPage />} />
         </Routes>
         <Footer />
       </div>

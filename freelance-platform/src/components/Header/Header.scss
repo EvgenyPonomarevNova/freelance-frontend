@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 .header {
   display: flex;
@@ -11,25 +11,25 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   .logo {
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    
+
     .logo-img {
       width: 40px;
       height: 40px;
       filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.3));
     }
-    
+
     h1 {
       margin: 0;
       color: #ffffff;
       font-size: 1.5rem;
       font-weight: 700;
-      
+
       .logo-accent {
         color: #667eea;
         text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
@@ -48,7 +48,7 @@
       padding: 0.5rem 1rem;
       border-radius: 6px;
       transition: all 0.3s ease;
-      
+
       &:hover {
         color: #ffffff;
         background: rgba(102, 126, 234, 0.1);
@@ -61,14 +61,18 @@
     display: flex;
     gap: 1rem;
 
-    button {
+    // Стили для ссылок-кнопок
+    a {
       padding: 0.7rem 1.5rem;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-family: 'Inter', sans-serif;
+      font-family: "Inter", sans-serif;
       transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
     }
 
     .login-btn {
@@ -108,7 +112,7 @@
       width: 100%;
       justify-content: center;
       gap: 1rem;
-      
+
       a {
         padding: 0.4rem 0.8rem;
         font-size: 0.9rem;
@@ -117,7 +121,7 @@
 
     .auth-buttons {
       gap: 0.8rem;
-      
+
       button {
         padding: 0.6rem 1.2rem;
         font-size: 0.9rem;

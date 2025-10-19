@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.register-form {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 20px;
+  padding: 3rem;
+  max-width: 500px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  .form-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+
+    h2 {
+      color: #ffffff;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+
+      .accent {
+        color: #667eea;
+        text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+      }
+    }
+
+    p {
+      color: #b0b0c0;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+  }
+}
+
+.role-selection {
+  margin-bottom: 2.5rem;
+
+  h3 {
+    color: #ffffff;
+    font-size: 1.2rem;
+    margin-bottom: 1.2rem;
+    font-weight: 600;
+  }
+
+  .role-options {
+    display: flex;
+    gap: 1rem;
+
+    .role-option {
+      flex: 1;
+      position: relative;
+      cursor: pointer;
+
+      input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .role-content {
+        background: #2a2a4a;
+        border: 2px solid #3a3a5a;
+        border-radius: 12px;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 100%;
+
+        &:hover {
+          border-color: #667eea;
+          transform: translateY(-2px);
+        }
+      }
+
+      &.selected .role-content {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+      }
+
+      .role-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.8rem;
+        filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.3));
+      }
+
+      .role-info {
+        h4 {
+          color: #ffffff;
+          font-size: 1.1rem;
+          margin-bottom: 0.3rem;
+          font-weight: 600;
+        }
+
+        p {
+          color: #b0b0c0;
+          font-size: 0.9rem;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+
+  label {
+    color: #ffffff;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  input {
+    padding: 1rem 1.2rem;
+    background: #2a2a4a;
+    border: 2px solid #3a3a5a;
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &::placeholder {
+      color: #666699;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    &.error {
+      border-color: #e74c3c;
+      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2);
+    }
+  }
+
+  .error-text {
+    color: #e74c3c;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+  }
+}
+
+.checkbox-group {
+  margin-bottom: 2rem;
+
+  .checkbox-label {
+    align-items: flex-start;
+    cursor: pointer;
+    color: #b0b0c0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+
+    input {
+      margin-top: 0.2rem;
+    }
+
+    a {
+      color: #667eea;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 1.2rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 1.5rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.form-footer {
+  text-align: center;
+
+  p {
+    color: #b0b0c0;
+    margin: 0;
+
+    .link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// Кастомный чекбокс
+.checkbox-label {
+  position: relative;
+  padding-left: 2.5rem;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+
+    &:checked ~ .checkmark {
+      background: #667eea;
+      border-color: #667eea;
+
+      &::after {
+        display: block;
+      }
+    }
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 1.2rem;
+    width: 1.2rem;
+    background: #2a2a4a;
+    border: 2px solid #3a3a5a;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+
+    &::after {
+      content: "✓";
+      position: absolute;
+      display: none;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: bold;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  &:hover input ~ .checkmark {
+    border-color: #667eea;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-form {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+
+    .form-header h2 {
+      font-size: 1.7rem;
+    }
+
+    .role-options {
+      flex-direction: column;
+    }
+  }
+}
