@@ -1,0 +1,31 @@
+<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff00ff"/>
+      <stop offset="50%" stop-color="#00ffff"/>
+      <stop offset="100%" stop-color="#ff00ff"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="glow"/>
+      <feComposite in="SourceGraphic" in2="glow" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Фон -->
+  <rect width="50" height="50" rx="5" fill="#0a0a1a"/>
+  
+  <!-- Основная геометрическая форма -->
+  <g filter="url(#neonGlow)">
+    <path d="M15 15 L35 15 L35 25 L25 35 L15 25 Z" fill="url(#neonGrad)" opacity="0.9"/>
+    <circle cx="25" cy="20" r="3" fill="#00ffff"/>
+    <circle cx="30" cy="25" r="2" fill="#ff00ff"/>
+    <circle cx="20" cy="25" r="2" fill="#ff00ff"/>
+  </g>
+  
+  <!-- Грид-сетка на фоне -->
+  <path d="M10 10 L40 10 M10 15 L40 15 M10 20 L40 20 M10 25 L40 25 M10 30 L40 30 M10 35 L40 35 M10 40 L40 40" 
+        stroke="#00ffff" stroke-width="0.5" opacity="0.3"/>
+  <path d="M10 10 L10 40 M15 10 L15 40 M20 10 L20 40 M25 10 L25 40 M30 10 L30 40 M35 10 L35 40 M40 10 L40 40" 
+        stroke="#ff00ff" stroke-width="0.5" opacity="0.3"/>
+</svg>

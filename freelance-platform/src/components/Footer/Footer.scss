@@ -1,18 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 2rem;
-  background: #34495e;
-  color: white;
-  margin-top: auto;
-  max-width: 1980px;
-  margin: 0 auto;
+  background: #0a0a1a;
+  border-top: 1px solid #2a2a4a;
+  font-family: 'Inter', sans-serif;
 
-    .footer-logo a {
-    margin: 0;
-    color: white;
-    font-size: 1.5rem;
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    
+    .logo-img {
+      width: 35px;
+      height: 35px;
+      filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.3));
+    }
+    
+    h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 1.3rem;
+      font-weight: 700;
+      
+      .logo-accent {
+        color: #667eea;
+        text-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+      }
+    }
   }
 
   .footer-nav {
@@ -21,37 +39,77 @@
 
     a {
       text-decoration: none;
-      color: white;
+      color: #b0b0c0;
       font-weight: 500;
-      font-size: 20px;
-
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      
       &:hover {
-        color: #3498db;
+        color: #ffffff;
+        background: rgba(102, 126, 234, 0.1);
+        text-shadow: 0 0 6px rgba(102, 126, 234, 0.3);
       }
     }
   }
+
   .partners {
     display: flex;
-    gap: 2rem;
-
+    gap: 1.5rem;
+    
     .partner-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-
-      img {
-        height: 40px; /* ← Увеличим размер */
-        width: auto;
-        border: 2px solid red; /* ← Рамка чтобы видеть область картинки */
-        background: white; /* ← Фон если SVG прозрачный */
-        padding: 5px;
-        border-radius: 4px;
+      padding: 0.8rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid #2a2a4a;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
       }
+      
+      img {
+        height: 25px;
+        width: auto;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+        
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
+}
 
-      span {
-        font-size: 0.8rem;
-        color: #ecf0f1;
+// Адаптивность
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+
+    .footer-nav {
+      gap: 1rem;
+      
+      a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    .partners {
+      gap: 1rem;
+      
+      .partner-item {
+        padding: 0.6rem;
+        
+        img {
+          height: 20px;
+        }
       }
     }
   }

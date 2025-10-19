@@ -1,10 +1,11 @@
-import './Header.scss'
+import "./Header.scss";
 
 function Header() {
   return (
     <header className="header">
       <div className="logo">
-        <h1><a href="#">💼 FreelanceHub </a> </h1>
+        <img src="/images/logo/logo.svg" alt="NexusHub" className="logo-img" />
+        <h1>Nexus<span className="logo-accent">Hub</span></h1>
       </div>
       <nav className="nav">
         <a href="#projects">Проекты</a>
@@ -16,7 +17,7 @@ function Header() {
         <button className="register-btn">Регистрация</button>
       </div>
     </header>
-  )
+  );
 }
 
-export default Header
+export default Header;

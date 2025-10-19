@@ -4,14 +4,14 @@ import viteLogo from '/vite.svg'
 import './App.scss'
 import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
+import HomePage from './pages/HomePage'
 
 function App() {
   return (
     <div className="app">
       <Header />
       <main>
-        <h2>Добро пожаловать на биржу фриланса!</h2>
-        {/* Здесь будет основной контент */}
+        <HomePage />
       </main>
       <Footer />
     </div>
