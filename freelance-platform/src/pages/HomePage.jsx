@@ -1,136 +1,203 @@
+// pages/HomePage/HomePage.jsx
 import './HomePage.scss'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 function HomePage() {
+  const [stats, setStats] = useState([
+    { value: '50M+', label: 'Зарегистрированных пользователей' },
+    { value: '25M+', label: 'Выполненных проектов' },
+    { value: '₽150B+', label: 'Выплачено фрилансерам' }
+  ])
+
+  const categories = [
+    { icon: '💻', name: 'Разработка', count: '245k проектов' },
+    { icon: '🎨', name: 'Дизайн', count: '180k проектов' },
+    { icon: '📝', name: 'Тексты', count: '95k проектов' },
+    { icon: '📊', name: 'Маркетинг', count: '120k проектов' },
+    { icon: '🔍', name: 'SEO', count: '65k проектов' },
+    { icon: '📱', name: 'Мобильные приложения', count: '85k проектов' }
+  ]
+
+  const howItWorks = [
+    {
+      step: '1',
+      title: 'Публикуйте проект',
+      description: 'Опишите вашу задачу и получите предложения от фрилансеров за считанные минуты',
+      icon: '📋'
+    },
+    {
+      step: '2',
+      title: 'Выбирайте исполнителей',
+      description: 'Сравнивайте отклики, изучайте портфолио и отзывы, выбирайте лучшего',
+      icon: '⭐'
+    },
+    {
+      step: '3',
+      title: 'Безопасная работа',
+      description: 'Оплачивайте только когда работа выполнена. Ваши средства защищены',
+      icon: '🛡️'
+    }
+  ]
+
+  const testimonials = [
+    {
+      text: 'NexusHub изменил мой подход к найму. Теперь я нахожу талантливых специалистов за несколько часов, а не недель.',
+      author: 'Анна Петрова',
+      role: 'CEO, TechStart',
+      avatar: '👩‍💼'
+    },
+    {
+      text: 'Как фрилансер, я нашел стабильный поток интересных проектов. Платформа действительно работает!',
+      author: 'Иван Сидоров',
+      role: 'Fullstack разработчик',
+      avatar: '👨‍💻'
+    }
+  ]
+
   return (
     <div className="home-page">
-      
-      {/* Герой-секция */}
+      {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <div className="logo-title">
-            <img src="/images/logo/logo.svg" alt="NexusHub" className="hero-logo" />
+          <div className="hero-text">
             <h1 className="hero-title">
-              Nexus<span className="title-accent">Hub</span>
+              Наймите лучших<br />
+              <span className="gradient-text">фрилансеров</span><br />
+              для любого проекта
             </h1>
+            <p className="hero-subtitle">
+              Присоединяйтесь к миллионам людей, использующих NexusHub для превращения своих идей в реальность
+            </p>
+            <div className="hero-buttons">
+              <Link to="/register" className="btn btn-primary">
+                Начать сейчас
+              </Link>
+              <Link to="/how-it-works" className="btn btn-secondary">
+                Как это работает
+              </Link>
+            </div>
+            <div className="hero-stats">
+              {stats.map((stat, index) => (
+                <div key={index} className="stat-item">
+                  <div className="stat-value">{stat.value}</div>
+                  <div className="stat-label">{stat.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="hero-tagline">Фриланс-платформа нового поколения</p>
-          <p className="hero-description">
-            Современная биржа для поиска исполнителей и заказчиков. 
-            Быстро, безопасно и удобно.
-          </p>
-          <div className="hero-actions">
-            <button className="btn-primary">Разместить проект</button>
-            <button className="btn-secondary">Найти работу</button>
-          </div>
-        </div>
-        
-        <div className="hero-stats">
-          <div className="stat-item">
-            <div className="stat-number">500+</div>
-            <div className="stat-label">активных проектов</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">1,200+</div>
-            <div className="stat-label">исполнителей</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">95%</div>
-            <div className="stat-label">успешных сделок</div>
+          <div className="hero-visual">
+            <div className="floating-card card-1">
+              <div className="card-header">
+                <span className="avatar">👨‍💼</span>
+                <div className="user-info">
+                  <strong>Маркетолог</strong>
+                  <span>⭐ 4.9 (127 отзывов)</span>
+                </div>
+              </div>
+              <p>Нужен SMM специалист для продвижения бренда...</p>
+              <div className="card-budget">Бюджет: ₽15,000 - ₽30,000</div>
+            </div>
+            <div className="floating-card card-2">
+              <div className="card-header">
+                <span className="avatar">👩‍🎨</span>
+                <div className="user-info">
+                  <strong>Дизайнер UI/UX</strong>
+                  <span>⭐ 5.0 (89 отзывов)</span>
+                </div>
+              </div>
+              <p>Создание современного дизайна для мобильного приложения...</p>
+              <div className="card-budget">Бюджет: ₽25,000 - ₽50,000</div>
+            </div>
+            <div className="floating-card card-3">
+              <div className="card-header">
+                <span className="avatar">👨‍💻</span>
+                <div className="user-info">
+                  <strong>React разработчик</strong>
+                  <span>⭐ 4.8 (204 отзыва)</span>
+                </div>
+              </div>
+              <p>Разработка корпоративного портала на React...</p>
+              <div className="card-budget">Бюджет: ₽50,000 - ₽100,000</div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Секция категорий */}
+      {/* Categories Section */}
       <section className="categories-section">
-        <h2 className="section-title">
-          Популярные <span className="title-accent">категории</span>
-        </h2>
-        <div className="categories-grid">
-          <div className="category-card">
-            <div className="card-icon">💻</div>
-            <h3>Разработка</h3>
-            <p>Веб и мобильные приложения</p>
-            <span className="project-count">245 проектов</span>
-          </div>
-          <div className="category-card">
-            <div className="card-icon">🎨</div>
-            <h3>Дизайн</h3>
-            <p>UI/UX, графика, брендинг</p>
-            <span className="project-count">189 проектов</span>
-          </div>
-          <div className="category-card">
-            <div className="card-icon">📝</div>
-            <h3>Тексты</h3>
-            <p>Копирайтинг, переводы</p>
-            <span className="project-count">156 проектов</span>
-          </div>
-          <div className="category-card">
-            <div className="card-icon">📊</div>
-            <h3>Маркетинг</h3>
-            <p>SEO, SMM, аналитика</p>
-            <span className="project-count">98 проектов</span>
+        <div className="container">
+          <h2 className="section-title">Популярные категории</h2>
+          <div className="categories-grid">
+            {categories.map((category, index) => (
+              <div key={index} className="category-card">
+                <div className="category-icon">{category.icon}</div>
+                <h3>{category.name}</h3>
+                <p>{category.count}</p>
+                <Link to="/projects" className="category-link">
+                  Найти специалистов →
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Как это работает */}
+      {/* How It Works Section */}
       <section className="how-it-works-section">
-        <h2 className="section-title">
-          Как это <span className="title-accent">работает</span>
-        </h2>
-        <div className="steps-container">
-          <div className="step">
-            <div className="step-number">1</div>
-            <h3>Разместите задачу</h3>
-            <p>Опишите ваш проект, установите бюджет и сроки выполнения</p>
-          </div>
-          <div className="step">
-            <div className="step-number">2</div>
-            <h3>Получите отклики</h3>
-            <p>Исполнители предложат свои услуги и цены</p>
-          </div>
-          <div className="step">
-            <div className="step-number">3</div>
-            <h3>Выберите исполнителя</h3>
-            <p>Просмотрите портфолио и отзывы, чтобы сделать выбор</p>
-          </div>
-          <div className="step">
-            <div className="step-number">4</div>
-            <h3>Оплатите безопасно</h3>
-            <p>Система гарантирует выполнение работы и защиту платежа</p>
+        <div className="container">
+          <h2 className="section-title">Как работает NexusHub</h2>
+          <div className="steps-grid">
+            {howItWorks.map((step, index) => (
+              <div key={index} className="step-card">
+                <div className="step-number">{step.step}</div>
+                <div className="step-icon">{step.icon}</div>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Преимущества */}
-      <section className="benefits-section">
-        <h2 className="section-title">
-          Почему выбирают <span className="title-accent">NexusHub</span>
-        </h2>
-        <div className="benefits-grid">
-          <div className="benefit-item">
-            <div className="benefit-icon">🛡️</div>
-            <h3>Безопасная сделка</h3>
-            <p>Ваши платежи защищены, работа проверяется перед оплатой</p>
-          </div>
-          <div className="benefit-item">
-            <div className="benefit-icon">⚡</div>
-            <h3>Быстрый старт</h3>
-            <p>Начните работу уже через 5 минут после регистрации</p>
-          </div>
-          <div className="benefit-item">
-            <div className="benefit-icon">👥</div>
-            <h3>Проверенные исполнители</h3>
-            <p>Все фрилансеры проходят верификацию и имеют рейтинг</p>
-          </div>
-          <div className="benefit-item">
-            <div className="benefit-icon">💬</div>
-            <h3>Поддержка 24/7</h3>
-            <p>Наша команда поможет решить любые вопросы</p>
+      {/* Testimonials Section */}
+      <section className="testimonials-section">
+        <div className="container">
+          <h2 className="section-title">Что говорят наши пользователи</h2>
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="testimonial-card">
+                <div className="testimonial-text">"{testimonial.text}"</div>
+                <div className="testimonial-author">
+                  <span className="avatar">{testimonial.avatar}</span>
+                  <div className="author-info">
+                    <strong>{testimonial.author}</strong>
+                    <span>{testimonial.role}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section className="cta-section">
+        <div className="container">
+          <div className="cta-content">
+            <h2>Готовы начать?</h2>
+            <p>Присоединяйтесь к NexusHub сегодня и откройте новые возможности</p>
+            <div className="cta-buttons">
+              <Link to="/register" className="btn btn-primary btn-large">
+                Создать аккаунт
+              </Link>
+              <Link to="/projects" className="btn btn-secondary btn-large">
+                Найти проекты
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

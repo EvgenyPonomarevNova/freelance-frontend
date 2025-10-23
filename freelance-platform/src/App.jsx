@@ -13,6 +13,8 @@ import CreateProjectPage from "./pages/CreateProjectPage/CreateProjectPage";
 import ChatPage from "./pages/ChatPage/ChatPage";
 import FreelancersPage from "./pages/FreelancersPage/FreelancersPage";
 import FreelancerProfilePage from "./pages/FreelancerProfilePage/FreelancerProfilePage";
+import HowItWorksPage from './pages/HowItWorksPage/HowItWorksPage'
+import MyProjectsPage from './pages/MyProjectsPage/MyProjectsPage'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
             <Route path="/create-project" element={<CreateProjectPage />} />
             <Route path="/chat/:projectId" element={<ChatPage />} />
             <Route path="/freelancers" element={<FreelancersPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/my-projects" element={<MyProjectsPage />} />
             <Route
               path="/profile/:freelancerId"
               element={<FreelancerProfilePage />}
