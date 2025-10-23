@@ -1,6 +1,6 @@
 // contexts/UserContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react'
-import { authService } from '../services/authService'
+import { apiService } from '../services/api'
 
 const UserContext = createContext()
 
@@ -14,7 +14,7 @@ export function UserProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const currentUser = await authService.getCurrentUser()
+      const currentUser = await apiService.getCurrentUser()
       setUser(currentUser)
     } catch (error) {
       console.error('Auth check failed:', error)
@@ -26,9 +26,9 @@ export function UserProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const { user: userData, token } = await authService.login(email, password)
-      setUser(userData)
-      return userData
+      const response = await apiService.login(email, password)
+      setUser(response.user)
+      return response.user
     } catch (error) {
       throw error
     }
@@ -36,31 +36,24 @@ export function UserProvider({ children }) {
 
   const register = async (userData) => {
     try {
-      const { user: newUser, token } = await authService.register(userData)
-      setUser(newUser)
-      return newUser
+      const response = await apiService.register(userData)
+      setUser(response.user)
+      return response.user
     } catch (error) {
       throw error
     }
   }
 
-  const logout = async () => {
-    try {
-      await authService.logout()
-      setUser(null)
-    } catch (error) {
-      console.error('Logout failed:', error)
-      setUser(null)
-    }
+  const logout = () => {
+    apiService.logout()
+    setUser(null)
   }
 
   const updateUser = async (updatedData) => {
     try {
-      // В реальном приложении здесь был бы API вызов
-      const updatedUser = { ...user, ...updatedData }
-      setUser(updatedUser)
-      localStorage.setItem('current_user', JSON.stringify(updatedUser))
-      return updatedUser
+      const response = await apiService.updateProfile(updatedData)
+      setUser(response.user)
+      return response.user
     } catch (error) {
       throw error
     }

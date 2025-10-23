@@ -9,13 +9,26 @@ function ProjectCard({ project }) {
   
   const hasResponded = user && project.responses?.some(r => r.freelancer.id === user.id)
 
-  const handleRespond = () => {
-    if (!user) {
-      alert('Для отклика необходимо войти в систему')
-      return
-    }
-    setShowRespondForm(true)
+const handleRespond = async () => {
+  if (!user) {
+    alert('Для отклика необходимо войти в систему')
+    return
   }
+  
+  // Показываем форму отклика или сразу отправляем
+  try {
+    const response = await apiService.respondToProject(project._id, {
+      proposal: "Готов взяться за проект!",
+      price: project.budget * 0.8, // 80% от бюджета
+      timeline: "2 недели"
+    })
+    
+    alert('Отклик успешно отправлен!')
+    setShowRespondForm(false)
+  } catch (error) {
+    alert('Ошибка при отправке отклика: ' + error.message)
+  }
+}
 
   const handleRespondSuccess = () => {
     setShowRespondForm(false)

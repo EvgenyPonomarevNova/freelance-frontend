@@ -57,37 +57,24 @@ function LoginForm() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Вызываем login из UserContext, который использует authService
-      await login(formData.email, formData.password)
-      
-      // Успешный логин - редирект
-      navigate(from, { replace: true })
-      
-    } catch (error) {
-      // Обрабатываем ошибки от authService
-      let errorMessage = 'Произошла ошибка при входе'
-      
-      if (error.message.includes('Неверный email или пароль')) {
-        errorMessage = 'Неверный email или пароль'
-      } else if (error.message.includes('сеть') || error.message.includes('network')) {
-        errorMessage = 'Проблемы с соединением. Проверьте интернет'
-      }
-      
-      setErrors({ submit: errorMessage })
-    } finally {
-      setIsLoading(false)
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  
+  if (!validateForm()) {
+    return
   }
+
+  setIsLoading(true)
+
+  try {
+    await login(formData.email, formData.password) // Теперь использует API
+    navigate('/profile')
+  } catch (error) {
+    setErrors({ submit: error.message })
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   const handleDemoLogin = async (role = 'freelancer') => {
     setIsLoading(true)

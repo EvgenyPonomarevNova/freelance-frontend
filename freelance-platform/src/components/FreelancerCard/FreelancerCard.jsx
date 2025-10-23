@@ -32,39 +32,36 @@ function FreelancerCard({ freelancer }) {
     navigate(`/profile/${freelancer.id}`)
   }
 
-  const handleMessageClick = () => {
-    if (!user) {
-      alert('Для отправки сообщений необходимо войти в систему')
-      return
-    }
-
-    if (user.id === freelancer.id) {
-      alert('Нельзя написать самому себе')
-      return
-    }
-
-    // Создаем чат с фрилансером
-    // Для простоты создаем проект-заглушку для чата
-    const chatProjectId = `chat_${user.id}_${freelancer.id}`
-    
-    // Сохраняем информацию о чате в localStorage
-    const existingChats = JSON.parse(localStorage.getItem('user_chats') || '{}')
-    if (!existingChats[chatProjectId]) {
-      existingChats[chatProjectId] = {
-        id: chatProjectId,
-        participants: [
-          { id: user.id, name: user.profile?.name || 'Вы' },
-          { id: freelancer.id, name: profile.name || 'Фрилансер' }
-        ],
-        lastMessage: '',
-        createdAt: new Date().toISOString()
-      }
-      localStorage.setItem('user_chats', JSON.stringify(existingChats))
-    }
-
-    // Переходим в чат
-    navigate(`/chat/${chatProjectId}`)
+const handleMessageClick = async () => {
+  if (!user) {
+    alert('Для отправки сообщений необходимо войти в систему')
+    return
   }
+
+  // Создаем проект для чата или используем существующий
+  try {
+    // Сначала создаем проект
+    const projectResponse = await apiService.createProject({
+      title: `Обсуждение сотрудничества с ${freelancer.profile.name}`,
+      description: `Чат для обсуждения возможного сотрудничества с ${freelancer.profile.name}`,
+      category: 'other',
+      budget: 0,
+      skills: []
+    })
+    
+    // Затем отправляем первое сообщение
+    await apiService.sendMessage({
+      projectId: projectResponse.project._id,
+      receiverId: freelancer._id,
+      text: `Здравствуйте! Интересует ваше портфолио и возможность сотрудничества.`
+    })
+    
+    // Переходим в чат
+    navigate(`/chat/${projectResponse.project._id}`)
+  } catch (error) {
+    alert('Ошибка при создании чата: ' + error.message)
+  }
+}
 
   const skillNames = getSkillNames(profile.skills)
 

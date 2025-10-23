@@ -1,25 +1,11 @@
 // src/services/api.js
 class ApiService {
   constructor() {
-    // Определяем базовый URL
-    this.baseURL = this.getBaseURL()
+    this.baseURL = 'http://localhost:3001/api'
     this.isMockMode = false
   }
 
-  getBaseURL() {
-    // Для разработки - localhost, для продакшена - ваш домен
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3001/api'
-    }
-    return 'https://your-production-domain.com/api'
-  }
-
   async request(endpoint, options = {}) {
-    // Если в mock mode, сразу выбрасываем ошибку для перехода к fallback
-    if (this.isMockMode) {
-      throw new Error('MOCK_MODE_ACTIVE')
-    }
-
     const url = `${this.baseURL}${endpoint}`
     const config = {
       headers: {
@@ -35,13 +21,12 @@ class ApiService {
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Преобразуем тело в JSON если нужно
+    // Если есть тело запроса, преобразуем в JSON
     if (config.body && typeof config.body === 'object') {
       config.body = JSON.stringify(config.body)
     }
 
     try {
-      console.log(`API Request: ${url}`, config)
       const response = await fetch(url, config)
       
       if (!response.ok) {
@@ -49,46 +34,136 @@ class ApiService {
         if (response.status === 401) {
           localStorage.removeItem('auth_token')
           localStorage.removeItem('current_user')
+          window.location.href = '/login'
         }
-        throw new Error(`HTTP ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
       
       return await response.json()
       
     } catch (error) {
-      console.warn('API request failed, switching to mock mode:', error.message)
-      
-      // Переключаемся в mock mode при ошибках сети
-      this.isMockMode = true
-      throw new Error('SERVER_UNAVAILABLE')
+      console.error('API request failed:', error)
+      throw error
     }
   }
 
-  // Вспомогательные методы
-  async get(endpoint) {
-    return this.request(endpoint)
-  }
-
-  async post(endpoint, data) {
-    return this.request(endpoint, {
+  // Auth methods
+  async login(email, password) {
+    const response = await this.request('/auth/login', {
       method: 'POST',
-      body: data,
+      body: { email, password },
+    })
+    
+    // Сохраняем токен и пользователя
+    if (response.token) {
+      localStorage.setItem('auth_token', response.token)
+      localStorage.setItem('current_user', JSON.stringify(response.user))
+    }
+    
+    return response
+  }
+
+  async register(userData) {
+    const response = await this.request('/auth/register', {
+      method: 'POST',
+      body: userData,
+    })
+    
+    // Сохраняем токен и пользователя
+    if (response.token) {
+      localStorage.setItem('auth_token', response.token)
+      localStorage.setItem('current_user', JSON.stringify(response.user))
+    }
+    
+    return response
+  }
+
+  async getCurrentUser() {
+    try {
+      const response = await this.request('/auth/me')
+      return response.user
+    } catch (error) {
+      // Если ошибка авторизации, очищаем localStorage
+      if (error.message.includes('401')) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('current_user')
+      }
+      return null
+    }
+  }
+
+  // Project methods
+  async getProjects(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString()
+    return this.request(`/projects?${queryParams}`)
+  }
+
+  async createProject(projectData) {
+    return this.request('/projects', {
+      method: 'POST',
+      body: projectData,
     })
   }
 
-  async put(endpoint, data) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: data,
+  async getProject(projectId) {
+    return this.request(`/projects/${projectId}`)
+  }
+
+  async respondToProject(projectId, responseData) {
+    return this.request(`/projects/${projectId}/respond`, {
+      method: 'POST',
+      body: responseData,
     })
   }
 
-  async delete(endpoint) {
-    return this.request(endpoint, {
-      method: 'DELETE',
+  async getMyResponses() {
+    return this.request('/projects/my/responses')
+  }
+
+  async getMyProjects() {
+    return this.request('/projects/client/my-projects')
+  }
+
+  async updateResponseStatus(projectId, responseId, status) {
+    return this.request(`/projects/${projectId}/responses/${responseId}`, {
+      method: 'PATCH',
+      body: { status },
     })
+  }
+
+  // User methods
+  async getFreelancers(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString()
+    return this.request(`/users/freelancers?${queryParams}`)
+  }
+
+  async getUserProfile(userId) {
+    return this.request(`/users/${userId}`)
+  }
+
+  async updateProfile(profileData) {
+    return this.request('/users/profile', {
+      method: 'PATCH',
+      body: profileData,
+    })
+  }
+
+  // Chat methods
+  async sendMessage(messageData) {
+    return this.request('/chat/message', {
+      method: 'POST',
+      body: messageData,
+    })
+  }
+
+  async getMessages(projectId) {
+    return this.request(`/chat/${projectId}/messages`)
+  }
+
+  logout() {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('current_user')
   }
 }
 
-// Создаем и экспортируем экземпляр
 export const apiService = new ApiService()

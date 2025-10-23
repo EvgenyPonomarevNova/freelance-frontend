@@ -27,47 +27,30 @@ function CreateProjectForm({ onSuccess, onCancel }) {
     )
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    
-    // Валидация
-    if (!formData.title.trim() || !formData.description.trim() || !formData.budget) {
-      alert('Пожалуйста, заполните обязательные поля')
-      return
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  
+  if (!formData.title.trim() || !formData.description.trim() || !formData.budget) {
+    alert('Пожалуйста, заполните обязательные поля')
+    return
+  }
 
-    // Сохраняем проект в localStorage
-    const projects = JSON.parse(localStorage.getItem('nexus_projects') || '[]')
-    const newProject = {
-      id: Date.now().toString(),
-      ...formData,
-      client: {
-        id: user.id,
-        name: user.profile.name,
-        avatar: user.profile.avatar
-      },
-      createdAt: new Date().toISOString(),
-      status: 'open',
-      responses: [],
-      views: 0
-    }
-    
-    projects.unshift(newProject) // Добавляем в начало
-    localStorage.setItem('nexus_projects', JSON.stringify(projects))
-    
-    // Очищаем форму
-    setFormData({
-      title: '',
-      description: '',
-      category: 'development',
-      budget: '',
-      deadline: '',
-      skills: []
+  try {
+    const response = await apiService.createProject({
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      budget: parseInt(formData.budget),
+      deadline: formData.deadline,
+      skills: formData.skills
     })
     
-    // Вызываем колбэк успеха
+    alert('Проект успешно создан!')
     onSuccess?.()
+  } catch (error) {
+    alert('Ошибка при создании проекта: ' + error.message)
   }
+}
 
   const addSkill = () => {
     if (currentSkill.trim() && !formData.skills.includes(currentSkill.trim())) {
