@@ -17,6 +17,7 @@ function RegisterForm() {
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -25,34 +26,48 @@ function RegisterForm() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
+    // Очищаем ошибки при изменении
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email) {
+    // Email validation
+    if (!formData.email.trim()) {
       newErrors.email = "Email обязателен";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Некорректный email";
+      newErrors.email = "Некорректный формат email";
     }
 
+    // Password validation
     if (!formData.password) {
       newErrors.password = "Пароль обязателен";
     } else if (formData.password.length < 6) {
       newErrors.password = "Пароль должен быть не менее 6 символов";
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = "Пароль должен содержать заглавные и строчные буквы";
     }
 
+    // Confirm password
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Пароли не совпадают";
     }
 
-    if (!formData.fullName) {
+    // Full name validation
+    if (!formData.fullName.trim()) {
       newErrors.fullName = "Имя обязательно";
+    } else if (formData.fullName.trim().length < 2) {
+      newErrors.fullName = "Имя должно содержать минимум 2 символа";
     }
 
+    // Terms agreement
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "Необходимо согласие с условиями";
     }
@@ -61,14 +76,78 @@ function RegisterForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      const newUser = register(formData);
-      // Редирект на страницу настройки профиля
-      navigate("/profile-setup");
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Подготавливаем данные для регистрации
+      const registrationData = {
+        email: formData.email.trim(),
+        password: formData.password,
+        fullName: formData.fullName.trim(),
+        role: formData.role
+      };
+
+      // Вызываем register из UserContext
+      await register(registrationData);
+      
+      // Успешная регистрация - редирект
+      navigate("/profile-setup", { 
+        state: { 
+          welcome: true,
+          role: formData.role 
+        } 
+      });
+      
+    } catch (error) {
+      // Обрабатываем ошибки от authService
+      let errorMessage = 'Произошла ошибка при регистрации';
+      
+      if (error.message.includes('уже существует')) {
+        errorMessage = 'Пользователь с таким email уже существует';
+      } else if (error.message.includes('сеть') || error.message.includes('network')) {
+        errorMessage = 'Проблемы с соединением. Проверьте интернет';
+      } else if (error.message.includes('валидации') || error.message.includes('validation')) {
+        errorMessage = 'Проверьте правильность введенных данных';
+      }
+      
+      setErrors({ submit: errorMessage });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const getRoleDescription = (role) => {
+    const descriptions = {
+      freelancer: {
+        title: "Находите интересные проекты",
+        features: [
+          "Создайте портфолио",
+          "Получайте заказы", 
+          "Работайте удаленно",
+          "Выстраивайте репутацию"
+        ]
+      },
+      client: {
+        title: "Найдите исполнителей для ваших задач", 
+        features: [
+          "Публикуйте проекты",
+          "Выбирайте из откликов",
+          "Контролируйте сроки",
+          "Безопасные платежи"
+        ]
+      }
+    };
+    return descriptions[role] || descriptions.freelancer;
+  };
+
+  const roleInfo = getRoleDescription(formData.role);
 
   return (
     <div className="register-form">
@@ -78,6 +157,12 @@ function RegisterForm() {
         </h2>
         <p>Создайте аккаунт и начните работать</p>
       </div>
+
+      {errors.submit && (
+        <div className="error-message">
+          {errors.submit}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         {/* Выбор роли */}
@@ -95,6 +180,7 @@ function RegisterForm() {
                 value="freelancer"
                 checked={formData.role === "freelancer"}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               <div className="role-content">
                 <div className="role-icon">💼</div>
@@ -116,6 +202,7 @@ function RegisterForm() {
                 value="client"
                 checked={formData.role === "client"}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               <div className="role-content">
                 <div className="role-icon">👔</div>
@@ -126,12 +213,22 @@ function RegisterForm() {
               </div>
             </label>
           </div>
+
+          {/* Описание выбранной роли */}
+          <div className="role-description">
+            <h4>{roleInfo.title}</h4>
+            <ul>
+              {roleInfo.features.map((feature, index) => (
+                <li key={index}>✓ {feature}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Основные поля */}
         <div className="form-fields">
           <div className="form-group">
-            <label htmlFor="fullName">Полное имя</label>
+            <label htmlFor="fullName">Полное имя *</label>
             <input
               type="text"
               id="fullName"
@@ -140,6 +237,8 @@ function RegisterForm() {
               onChange={handleChange}
               placeholder="Иван Иванов"
               className={errors.fullName ? "error" : ""}
+              disabled={isLoading}
+              autoComplete="name"
             />
             {errors.fullName && (
               <span className="error-text">{errors.fullName}</span>
@@ -147,7 +246,7 @@ function RegisterForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email *</label>
             <input
               type="email"
               id="email"
@@ -156,12 +255,14 @@ function RegisterForm() {
               onChange={handleChange}
               placeholder="your@email.com"
               className={errors.email ? "error" : ""}
+              disabled={isLoading}
+              autoComplete="email"
             />
             {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Пароль</label>
+            <label htmlFor="password">Пароль *</label>
             <input
               type="password"
               id="password"
@@ -170,14 +271,19 @@ function RegisterForm() {
               onChange={handleChange}
               placeholder="Не менее 6 символов"
               className={errors.password ? "error" : ""}
+              disabled={isLoading}
+              autoComplete="new-password"
             />
             {errors.password && (
               <span className="error-text">{errors.password}</span>
             )}
+            <div className="password-hint">
+              Пароль должен содержать заглавные и строчные буквы
+            </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Подтвердите пароль</label>
+            <label htmlFor="confirmPassword">Подтвердите пароль *</label>
             <input
               type="password"
               id="confirmPassword"
@@ -186,6 +292,8 @@ function RegisterForm() {
               onChange={handleChange}
               placeholder="Повторите пароль"
               className={errors.confirmPassword ? "error" : ""}
+              disabled={isLoading}
+              autoComplete="new-password"
             />
             {errors.confirmPassword && (
               <span className="error-text">{errors.confirmPassword}</span>
@@ -201,18 +309,36 @@ function RegisterForm() {
               name="agreeToTerms"
               checked={formData.agreeToTerms}
               onChange={handleChange}
+              disabled={isLoading}
             />
-            <span className="checkmark"></span>Я соглашаюсь с{" "}
-            <a href="/rules">правилами платформы</a> и{" "}
-            <a href="/safety">политикой конфиденциальности</a>
+            <span className="checkmark"></span>
+            Я соглашаюсь с{" "}
+            <a href="/rules" target="_blank" rel="noopener noreferrer">
+              правилами платформы
+            </a>{" "}
+            и{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer">
+              политикой конфиденциальности
+            </a>
           </label>
           {errors.agreeToTerms && (
             <span className="error-text">{errors.agreeToTerms}</span>
           )}
         </div>
 
-        <button type="submit" className="submit-btn">
-          Создать аккаунт
+        <button 
+          type="submit" 
+          className={`submit-btn ${isLoading ? 'loading' : ''}`}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="spinner"></span>
+              Регистрация...
+            </>
+          ) : (
+            'Создать аккаунт'
+          )}
         </button>
 
         <div className="form-footer">

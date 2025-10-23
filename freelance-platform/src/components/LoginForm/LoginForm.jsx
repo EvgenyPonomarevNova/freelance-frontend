@@ -1,11 +1,12 @@
 import './LoginForm.scss'
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 function LoginForm() {
   const { login } = useUser()
   const navigate = useNavigate()
+  const location = useLocation()
   
   const [formData, setFormData] = useState({
     email: '',
@@ -16,6 +17,9 @@ function LoginForm() {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
+  // Получаем путь для редиректа после логина (если был переход с другой страницы)
+  const from = location.state?.from?.pathname || '/profile'
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
     setFormData(prev => ({
@@ -23,22 +27,30 @@ function LoginForm() {
       [name]: type === 'checkbox' ? checked : value
     }))
     
+    // Очищаем ошибку при изменении поля
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+    
+    // Очищаем общую ошибку при любом изменении
+    if (errors.submit) {
+      setErrors(prev => ({ ...prev, submit: '' }))
     }
   }
 
   const validateForm = () => {
     const newErrors = {}
 
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Email обязателен'
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Некорректный email'
+      newErrors.email = 'Некорректный формат email'
     }
 
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Пароль должен содержать минимум 6 символов'
     }
 
     setErrors(newErrors)
@@ -55,22 +67,50 @@ function LoginForm() {
     setIsLoading(true)
 
     try {
-      // Имитируем задержку сети
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Вызываем login из UserContext, который использует authService
+      await login(formData.email, formData.password)
       
-      // Ищем пользователя в localStorage
-      const users = JSON.parse(localStorage.getItem('nexus_users') || '[]')
-      const user = users.find(u => u.email === formData.email && u.password === formData.password)
+      // Успешный логин - редирект
+      navigate(from, { replace: true })
       
-      if (user) {
-        // Успешный вход
-        login(user)
-        navigate('/profile') // Перенаправляем на профиль
-      } else {
-        setErrors({ submit: 'Неверный email или пароль' })
-      }
     } catch (error) {
-      setErrors({ submit: 'Произошла ошибка при входе' })
+      // Обрабатываем ошибки от authService
+      let errorMessage = 'Произошла ошибка при входе'
+      
+      if (error.message.includes('Неверный email или пароль')) {
+        errorMessage = 'Неверный email или пароль'
+      } else if (error.message.includes('сеть') || error.message.includes('network')) {
+        errorMessage = 'Проблемы с соединением. Проверьте интернет'
+      }
+      
+      setErrors({ submit: errorMessage })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDemoLogin = async (role = 'freelancer') => {
+    setIsLoading(true)
+    
+    try {
+      // Демо-аккаунты для тестирования
+      const demoAccounts = {
+        freelancer: {
+          email: 'freelancer@demo.ru',
+          password: 'demo123'
+        },
+        client: {
+          email: 'client@demo.ru', 
+          password: 'demo123'
+        }
+      }
+      
+      const demoAccount = demoAccounts[role]
+      await login(demoAccount.email, demoAccount.password)
+      navigate('/profile')
+      
+    } catch (error) {
+      setErrors({ submit: 'Ошибка демо-входа. Создайте аккаунт.' })
     } finally {
       setIsLoading(false)
     }
@@ -96,8 +136,11 @@ function LoginForm() {
               placeholder="your@email.com"
               className={errors.email ? 'error' : ''}
               disabled={isLoading}
+              autoComplete="email"
             />
-            {errors.email && <span className="error-text">{errors.email}</span>}
+            {errors.email && (
+              <span className="error-text">{errors.email}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -111,8 +154,11 @@ function LoginForm() {
               placeholder="Введите ваш пароль"
               className={errors.password ? 'error' : ''}
               disabled={isLoading}
+              autoComplete="current-password"
             />
-            {errors.password && <span className="error-text">{errors.password}</span>}
+            {errors.password && (
+              <span className="error-text">{errors.password}</span>
+            )}
           </div>
         </div>
 
@@ -145,8 +191,38 @@ function LoginForm() {
           className={`submit-btn ${isLoading ? 'loading' : ''}`}
           disabled={isLoading}
         >
-          {isLoading ? 'Вход...' : 'Войти в аккаунт'}
+          {isLoading ? (
+            <>
+              <span className="spinner"></span>
+              Вход...
+            </>
+          ) : (
+            'Войти в аккаунт'
+          )}
         </button>
+
+        {/* Демо-аккаунты для быстрого тестирования */}
+        <div className="demo-accounts">
+          <p className="demo-divider">Или войдите как:</p>
+          <div className="demo-buttons">
+            <button 
+              type="button"
+              className="demo-btn freelancer-demo"
+              onClick={() => handleDemoLogin('freelancer')}
+              disabled={isLoading}
+            >
+              👨‍💻 Демо-фрилансер
+            </button>
+            <button 
+              type="button"
+              className="demo-btn client-demo" 
+              onClick={() => handleDemoLogin('client')}
+              disabled={isLoading}
+            >
+              👔 Демо-заказчик
+            </button>
+          </div>
+        </div>
 
         <div className="form-footer">
           <p>

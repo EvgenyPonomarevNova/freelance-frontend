@@ -233,3 +233,99 @@
     }
   }
 }
+
+// Добавить в конец LoginForm.scss
+
+.demo-accounts {
+  margin: 1.5rem 0;
+  
+  .demo-divider {
+    text-align: center;
+    color: #666699;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    position: relative;
+    
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 30%;
+      height: 1px;
+      background: #2a2a4a;
+    }
+    
+    &::before {
+      left: 0;
+    }
+    
+    &::after {
+      right: 0;
+    }
+  }
+  
+  .demo-buttons {
+    display: flex;
+    gap: 0.8rem;
+    
+    @media (max-width: 480px) {
+      flex-direction: column;
+    }
+  }
+  
+  .demo-btn {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: 1px solid #3a3a5a;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #b0b0c0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    
+    &:hover:not(:disabled) {
+      background: rgba(102, 126, 234, 0.1);
+      border-color: #667eea;
+      color: #ffffff;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    &.freelancer-demo:hover:not(:disabled) {
+      border-color: #27ae60;
+      background: rgba(39, 174, 96, 0.1);
+    }
+    
+    &.client-demo:hover:not(:disabled) {
+      border-color: #e74c3c;
+      background: rgba(231, 76, 60, 0.1);
+    }
+  }
+}
+
+// Спиннер для кнопки загрузки
+.submit-btn.loading {
+  position: relative;
+  
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
