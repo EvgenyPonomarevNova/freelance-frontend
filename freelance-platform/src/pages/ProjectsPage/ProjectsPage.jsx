@@ -3,70 +3,9 @@ import ProjectCard from '../../components/ProjectCard/ProjectCard'
 import { useState, useMemo } from 'react'
 
 function ProjectsPage() {
-  // Исходные данные проектов
-  const allProjects = [
-    {
-      id: 1,
-      title: "Разработка лендинга для IT компании",
-      description: "Нужно создать современный лендинг с адаптивной версткой. Требуется интеграция с CRM системой и формами обратной связи. Дизайн уже готов в Figma.",
-      budget: 25000,
-      skills: ["HTML/CSS", "JavaScript", "React", "Figma"],
-      category: "development",
-      createdAt: "2 часа назад",
-      responses: 5
-    },
-    {
-      id: 2,
-      title: "Дизайн мобильного приложения для доставки еды",
-      description: "Разработка UI/UX дизайна для iOS и Android приложения. Необходимо создать удобный интерфейс для заказа еды и отслеживания доставки.",
-      budget: 45000,
-      skills: ["UI/UX", "Figma", "Mobile Design", "Prototyping"],
-      category: "design",
-      createdAt: "5 часов назад",
-      responses: 8
-    },
-    {
-      id: 3,
-      title: "Написание технической документации для API",
-      description: "Требуется оформить документацию для REST API нашего сервиса. Необходимо описать все endpoints, параметры и примеры запросов.",
-      budget: 15000,
-      skills: ["Technical Writing", "API", "Documentation", "English"],
-      category: "writing",
-      createdAt: "вчера",
-      responses: 3
-    },
-    {
-      id: 4,
-      title: "Создание логотипа и брендбука для стартапа",
-      description: "Разработка логотипа и фирменного стиля для fintech стартапа. Нужно отразить современность, надежность и инновации.",
-      budget: 30000,
-      skills: ["Logo Design", "Branding", "Illustrator", "Brand Identity"],
-      category: "design",
-      createdAt: "вчера",
-      responses: 12
-    },
-    {
-      id: 5,
-      title: "Разработка Telegram бота для автоматизации заказов",
-      description: "Создание бота для приема заказов, уведомлений клиентов и интеграции с базой данных. Бот должен работать с платежами.",
-      budget: 35000,
-      skills: ["Python", "Telegram API", "PostgreSQL", "Payment Systems"],
-      category: "development",
-      createdAt: "2 дня назад",
-      responses: 6
-    },
-    {
-      id: 6,
-      title: "SEO оптимизация интернет-магазина",
-      description: "Комплексная SEO оптимизация существующего интернет-магазина. Аудит, исправление ошибок, составление семантического ядра.",
-      budget:  28000,
-      skills: ["SEO", "Google Analytics", "Content Writing", "E-commerce"],
-      category: "marketing",
-      createdAt: "2 дня назад",
-      responses: 4
-    }
-  ]
-
+  // Получаем проекты из localStorage
+  const projects = JSON.parse(localStorage.getItem('nexus_projects') || '[]')
+  
   // Состояния для фильтров и поиска
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -74,12 +13,12 @@ function ProjectsPage() {
 
   // Функция фильтрации проектов
   const filteredProjects = useMemo(() => {
-    return allProjects.filter(project => {
+    return projects.filter(project => {
       // Поиск по заголовку и описанию
       const matchesSearch = searchQuery === '' || 
         project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.skills.some(skill => 
+        project.skills?.some(skill => 
           skill.toLowerCase().includes(searchQuery.toLowerCase())
         )
       
@@ -96,7 +35,7 @@ function ProjectsPage() {
 
       return matchesSearch && matchesCategory && matchesBudget
     })
-  }, [searchQuery, selectedCategory, selectedBudget])
+  }, [searchQuery, selectedCategory, selectedBudget, projects])
 
   // Обработчики изменений
   const handleSearchChange = (e) => {
@@ -113,7 +52,6 @@ function ProjectsPage() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
-    // Поиск уже работает через состояние
   }
 
   return (
@@ -173,7 +111,7 @@ function ProjectsPage() {
         </div>
         <div className="stat">
           <span className="stat-number">
-            {filteredProjects.reduce((sum, project) => sum + project.responses, 0)}
+            {filteredProjects.reduce((sum, project) => sum + (project.responses?.length || 0), 0)}
           </span>
           <span className="stat-label">всего откликов</span>
         </div>
@@ -184,6 +122,12 @@ function ProjectsPage() {
           <div className="no-projects-icon">🔍</div>
           <h3>Проекты не найдены</h3>
           <p>Попробуйте изменить параметры поиска или фильтры</p>
+          <button 
+            className="create-first-project-btn"
+            onClick={() => window.location.href = '/create-project'}
+          >
+            Создать первый проект
+          </button>
         </div>
       ) : (
         <>
@@ -191,10 +135,7 @@ function ProjectsPage() {
             {filteredProjects.map(project => (
               <ProjectCard 
                 key={project.id}
-                project={{
-                  ...project,
-                  budget: project.budget.toLocaleString('ru-RU')
-                }}
+                project={project}
               />
             ))}
           </div>
