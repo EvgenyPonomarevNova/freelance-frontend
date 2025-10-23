@@ -9,7 +9,6 @@ function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   
-  // Refs для автодополнения
   const countryInputRef = useRef(null)
   const cityInputRef = useRef(null)
 
@@ -50,7 +49,6 @@ function SettingsPage() {
     compactMode: false
   })
 
-  // Состояния для автодополнения
   const [countrySuggestions, setCountrySuggestions] = useState([])
   const [citySuggestions, setCitySuggestions] = useState([])
   const [showCountrySuggestions, setShowCountrySuggestions] = useState(false)
@@ -107,7 +105,6 @@ function SettingsPage() {
     { value: 'America/Los_Angeles', label: 'Лос-Анджелес (UTC-8)' }
   ]
 
-  // Функции для автодополнения стран
   const handleCountryInput = (value) => {
     setProfileData({...profileData, country: value})
     
@@ -128,13 +125,12 @@ function SettingsPage() {
     setProfileData({
       ...profileData, 
       country: country.name,
-      city: '' // Сбрасываем город при смене страны
+      city: ''
     })
     setShowCountrySuggestions(false)
     setCitySuggestions(country.cities)
   }
 
-  // Функции для автодополнения городов
   const handleCityInput = (value) => {
     setProfileData({...profileData, city: value})
     
@@ -767,7 +763,198 @@ function SettingsPage() {
     </div>
   )
 
-  // ... остальные табы (payments, privacy) остаются без изменений ...
+  const renderPaymentsTab = () => (
+    <div className="settings-tab">
+      <div className="tab-header">
+        <h2>Платежные методы</h2>
+        <p>Управляйте способами получения и отправки платежей</p>
+      </div>
+
+      <div className="form-section">
+        <h3>💳 Добавить платежный метод</h3>
+        
+        <div className="payment-methods">
+          <div className="payment-method-card">
+            <div className="method-icon">💳</div>
+            <div className="method-info">
+              <h4>Банковская карта</h4>
+              <p>Visa, Mastercard, Мир</p>
+            </div>
+            <button className="btn btn-outline">Добавить</button>
+          </div>
+
+          <div className="payment-method-card">
+            <div className="method-icon">🏦</div>
+            <div className="method-info">
+              <h4>Банковский перевод</h4>
+              <p>Прямой перевод на счет</p>
+            </div>
+            <button className="btn btn-outline">Добавить</button>
+          </div>
+
+          <div className="payment-method-card">
+            <div className="method-icon">📱</div>
+            <div className="method-info">
+              <h4>Электронные кошельки</h4>
+              <p>ЮMoney, Qiwi, WebMoney</p>
+            </div>
+            <button className="btn btn-outline">Добавить</button>
+          </div>
+
+          <div className="payment-method-card">
+            <div className="method-icon">🌐</div>
+            <div className="method-info">
+              <h4>Криптовалюты</h4>
+              <p>Bitcoin, Ethereum, USDT</p>
+            </div>
+            <button className="btn btn-outline">Добавить</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>💰 Настройки выплат</h3>
+        
+        <div className="form-group">
+          <label>Минимальная сумма для вывода (₽)</label>
+          <input
+            type="number"
+            placeholder="1000"
+            min="100"
+            max="10000"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Автоматические выплаты</label>
+          <select>
+            <option value="weekly">Еженедельно</option>
+            <option value="biweekly">Дважды в месяц</option>
+            <option value="monthly">Ежемесячно</option>
+            <option value="manual">Вручную</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>📊 История платежей</h3>
+        <div className="empty-state">
+          <div className="empty-icon">💸</div>
+          <p>Пока нет истории платежей</p>
+          <button className="btn btn-outline" style={{marginTop: '1rem'}}>
+            📥 Экспорт данных
+          </button>
+        </div>
+      </div>
+
+      <div className="form-actions">
+        <button className="btn btn-primary">
+          💾 Сохранить настройки
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderPrivacyTab = () => (
+    <div className="settings-tab">
+      <div className="tab-header">
+        <h2>Конфиденциальность</h2>
+        <p>Управляйте вашими настройками конфиденциальности и данными</p>
+      </div>
+
+      <form onSubmit={handleNotificationSave}>
+        <div className="form-section">
+          <h3>👁️ Видимость профиля</h3>
+          
+          <div className="notification-item">
+            <div className="notification-info">
+              <h4>Публичный профиль</h4>
+              <p>Разрешить другим пользователям просматривать ваш профиль</p>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" defaultChecked />
+              <span className="slider"></span>
+            </label>
+          </div>
+
+          <div className="notification-item">
+            <div className="notification-info">
+              <h4>Показывать онлайн-статус</h4>
+              <p>Отображать когда вы онлайн для других пользователей</p>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" defaultChecked />
+              <span className="slider"></span>
+            </label>
+          </div>
+
+          <div className="notification-item">
+            <div className="notification-info">
+              <h4>Показывать почасовую ставку</h4>
+              <p>Отображать вашу ставку в публичном профиле</p>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" defaultChecked />
+              <span className="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>📨 Конфиденциальность сообщений</h3>
+          
+          <div className="notification-item">
+            <div className="notification-info">
+              <h4>Принимать сообщения от всех</h4>
+              <p>Разрешить получать сообщения от любых пользователей</p>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" defaultChecked />
+              <span className="slider"></span>
+            </label>
+          </div>
+
+          <div className="notification-item">
+            <div className="notification-info">
+              <h4>Фильтр спам-сообщений</h4>
+              <p>Автоматически фильтровать подозрительные сообщения</p>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" defaultChecked />
+              <span className="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>🗑️ Управление данными</h3>
+          
+          <div className="privacy-action">
+            <div className="action-info">
+              <h4>Экспорт данных</h4>
+              <p>Скачайте копию ваших данных с платформы</p>
+            </div>
+            <button className="btn btn-outline">📥 Экспортировать данные</button>
+          </div>
+
+          <div className="privacy-action">
+            <div className="action-info">
+              <h4>Удаление аккаунта</h4>
+              <p>Полностью удалите ваш аккаунт и все данные</p>
+              <p className="warning-text">Это действие нельзя отменить!</p>
+            </div>
+            <button className="btn btn-danger">🗑️ Удалить аккаунт</button>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? 'Сохранение...' : '💾 Сохранить настройки'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
 
   if (!user) {
     return (
