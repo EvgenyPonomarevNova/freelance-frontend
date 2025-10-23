@@ -9,6 +9,7 @@ import RulesPage from './pages/RulesPage/RulesPage'
 import SafetyPage from './pages/SafetyPage/SafetyPage'
 import AuthPage from './pages/AuthPage/AuthPage'
 import ProfilePage from './pages/ProfilePage/ProfilePage'
+import CreateProjectPage from './pages/CreateProjectPage/CreateProjectPage'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/login" element={<AuthPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile-setup" element={<ProfilePage />} />
+            <Route path="/create-project" element={<CreateProjectPage />} />
           </Routes>
           <Footer />
         </div>

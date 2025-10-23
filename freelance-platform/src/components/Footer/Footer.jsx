@@ -5,7 +5,7 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="logo">
-        <img src="/images/logo.svg" alt="NexusHub" className="logo-img" />
+        <img src="/images/logo/logo.svg" alt="NexusHub" className="logo-img" />
         <h1>Freelance<span className="logo-accent">Hub</span></h1>
       </div>
       <nav className="footer-nav">

@@ -1,0 +1,16 @@
+.create-project-page {
+  min-height: calc(100vh - 120px);
+  background: #0f0f23;
+  padding: 2rem;
+
+  .page-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-project-page {
+    padding: 1rem;
+  }
+}
