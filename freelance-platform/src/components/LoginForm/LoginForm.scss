@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 .login-form {
   background: #1a1a2e;
@@ -7,7 +7,7 @@
   padding: 3rem;
   max-width: 450px;
   margin: 0 auto;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 
   .form-header {
@@ -53,7 +53,7 @@
     border: 2px solid #3a3a5a;
     border-radius: 10px;
     color: #ffffff;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 1rem;
     transition: all 0.3s ease;
 
@@ -164,7 +164,7 @@
   font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   margin-bottom: 1.5rem;
 
   &:hover {
@@ -175,6 +175,27 @@
   &:active {
     transform: translateY(0);
   }
+
+  &.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+.error-message {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .form-footer {

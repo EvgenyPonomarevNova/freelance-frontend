@@ -1,7 +1,12 @@
 import './LoginForm.scss'
 import { useState } from 'react'
+import { useUser } from '../../contexts/UserContext'
+import { useNavigate } from 'react-router-dom'
 
-function LoginForm({ onSuccess }) {
+function LoginForm() {
+  const { login } = useUser()
+  const navigate = useNavigate()
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -9,6 +14,7 @@ function LoginForm({ onSuccess }) {
   })
 
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -17,7 +23,6 @@ function LoginForm({ onSuccess }) {
       [name]: type === 'checkbox' ? checked : value
     }))
     
-    // Очищаем ошибку при изменении поля
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -40,12 +45,34 @@ function LoginForm({ onSuccess }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (validateForm()) {
-      // Здесь будет логика входа
-      console.log('Вход:', formData)
-      if (onSuccess) onSuccess()
+    
+    if (!validateForm()) {
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Имитируем задержку сети
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Ищем пользователя в localStorage
+      const users = JSON.parse(localStorage.getItem('nexus_users') || '[]')
+      const user = users.find(u => u.email === formData.email && u.password === formData.password)
+      
+      if (user) {
+        // Успешный вход
+        login(user)
+        navigate('/profile') // Перенаправляем на профиль
+      } else {
+        setErrors({ submit: 'Неверный email или пароль' })
+      }
+    } catch (error) {
+      setErrors({ submit: 'Произошла ошибка при входе' })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -68,6 +95,7 @@ function LoginForm({ onSuccess }) {
               onChange={handleChange}
               placeholder="your@email.com"
               className={errors.email ? 'error' : ''}
+              disabled={isLoading}
             />
             {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
@@ -82,10 +110,17 @@ function LoginForm({ onSuccess }) {
               onChange={handleChange}
               placeholder="Введите ваш пароль"
               className={errors.password ? 'error' : ''}
+              disabled={isLoading}
             />
             {errors.password && <span className="error-text">{errors.password}</span>}
           </div>
         </div>
+
+        {errors.submit && (
+          <div className="error-message">
+            {errors.submit}
+          </div>
+        )}
 
         <div className="form-options">
           <label className="checkbox-label">
@@ -94,6 +129,7 @@ function LoginForm({ onSuccess }) {
               name="rememberMe"
               checked={formData.rememberMe}
               onChange={handleChange}
+              disabled={isLoading}
             />
             <span className="checkmark"></span>
             Запомнить меня
@@ -104,8 +140,12 @@ function LoginForm({ onSuccess }) {
           </a>
         </div>
 
-        <button type="submit" className="submit-btn">
-          Войти в аккаунт
+        <button 
+          type="submit" 
+          className={`submit-btn ${isLoading ? 'loading' : ''}`}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Вход...' : 'Войти в аккаунт'}
         </button>
 
         <div className="form-footer">
