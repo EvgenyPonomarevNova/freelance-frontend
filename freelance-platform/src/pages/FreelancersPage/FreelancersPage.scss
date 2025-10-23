@@ -1,0 +1,136 @@
+// pages/FreelancersPage/FreelancersPage.scss
+.freelancers-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+
+    h1 {
+      color: #ffffff;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    p {
+      color: #b0b0c0;
+      font-size: 1.2rem;
+      margin: 0;
+    }
+  }
+
+  .search-section {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+
+      input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        background: #2a2a4a;
+        border: 1px solid #3a3a5a;
+        border-radius: 12px;
+        color: #ffffff;
+        font-size: 1rem;
+
+        &::placeholder {
+          color: #666699;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+      }
+
+      .search-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+      }
+    }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      select {
+        padding: 0.8rem 1.2rem;
+        background: #2a2a4a;
+        border: 1px solid #3a3a5a;
+        border-radius: 8px;
+        color: #ffffff;
+        cursor: pointer;
+
+        &:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+      }
+    }
+  }
+
+  .freelancers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 3rem;
+    color: #b0b0c0;
+
+    h3 {
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #b0b0c0;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .freelancers-page {
+    padding: 1rem;
+
+    .page-header {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    .freelancers-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filters {
+      flex-direction: column;
+    }
+  }
+}

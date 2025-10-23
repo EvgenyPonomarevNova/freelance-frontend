@@ -19,8 +19,15 @@ function ProjectCard({ project }) {
 
   const handleRespondSuccess = () => {
     setShowRespondForm(false)
-    // Можно показать уведомление об успешном отклике
     alert('Отклик успешно отправлен!')
+  }
+
+  const handleChatClick = () => {
+    if (!user) {
+      alert('Для общения в чате необходимо войти в систему')
+      return
+    }
+    window.location.href = `/chat/${project.id}`
   }
 
   return (
@@ -39,11 +46,13 @@ function ProjectCard({ project }) {
           <span className="project-responses">{project.responses?.length || 0} откликов</span>
         </div>
 
-        <div className="project-skills">
-          {project.skills?.map(skill => (
-            <span key={skill} className="skill-tag">{skill}</span>
-          ))}
-        </div>
+        {project.skills && project.skills.length > 0 && (
+          <div className="project-skills">
+            {project.skills.map(skill => (
+              <span key={skill} className="skill-tag">{skill}</span>
+            ))}
+          </div>
+        )}
         
         <div className="project-footer">
           <div className="project-client">
@@ -54,6 +63,17 @@ function ProjectCard({ project }) {
           </div>
           
           <div className="project-actions">
+            {/* Кнопка чата показывается если пользователь участник проекта */}
+            {(user?.id === project.client?.id || hasResponded) && (
+              <button 
+                className="chat-btn"
+                onClick={handleChatClick}
+              >
+                💬 Чат
+              </button>
+            )}
+            
+            {/* Кнопка отклика */}
             {hasResponded ? (
               <button className="responded-btn" disabled>
                 ✅ Отклик отправлен

@@ -1,0 +1,164 @@
+// pages/FreelancerProfilePage/FreelancerProfilePage.scss
+.freelancer-profile {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  .profile-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 2rem;
+
+    .avatar-large {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .profile-info {
+      flex: 1;
+
+      h1 {
+        color: #ffffff;
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+      }
+
+      .category {
+        color: #667eea;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        display: block;
+      }
+
+      .rating {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 1rem;
+      }
+
+      .bio {
+        color: #b0b0c0;
+        line-height: 1.6;
+        margin: 0;
+      }
+    }
+  }
+
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+
+    .stat-card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+
+      strong {
+        display: block;
+        color: #ffffff;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      span {
+        color: #b0b0c0;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .skills-section {
+    margin-bottom: 3rem;
+
+    h2 {
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .skills-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      .skill-item {
+        background: rgba(102, 126, 234, 0.1);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 20px;
+        padding: 0.8rem 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+
+        .skill-name {
+          color: #88aaff;
+          font-weight: 500;
+        }
+
+        .skill-level {
+          background: #667eea;
+          color: white;
+          padding: 0.3rem 0.6rem;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  .portfolio-section {
+    h2 {
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .no-portfolio {
+      color: #b0b0c0;
+      text-align: center;
+      padding: 2rem;
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+    }
+  }
+}
+
+.loading, .profile-not-found {
+  text-align: center;
+  padding: 3rem;
+  color: #b0b0c0;
+}
+
+@media (max-width: 768px) {
+  .freelancer-profile {
+    padding: 1rem;
+
+    .profile-header {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+    }
+  }
+}

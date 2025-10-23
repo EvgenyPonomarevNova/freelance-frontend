@@ -180,6 +180,23 @@
   }
 }
 
+.chat-btn {
+  background: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+  border: 1px solid #3498db;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 0.5rem;
+
+  &:hover {
+    background: rgba(52, 152, 219, 0.3);
+    transform: translateY(-1px);
+  }
+}
+
 // Адаптивность
 @media (max-width: 768px) {
   .project-card {

@@ -1,16 +1,19 @@
-import './App.scss'
-import { UserProvider } from './contexts/UserContext'
-import Header from './components/Header/Header'
-import Footer from './components/Footer/Footer'
-import HomePage from './pages/HomePage'
-import ProjectsPage from './pages/ProjectsPage/ProjectsPage'
-import AboutPage from './pages/AboutPage/AboutPage'
-import RulesPage from './pages/RulesPage/RulesPage'
-import SafetyPage from './pages/SafetyPage/SafetyPage'
-import AuthPage from './pages/AuthPage/AuthPage'
-import ProfilePage from './pages/ProfilePage/ProfilePage'
-import CreateProjectPage from './pages/CreateProjectPage/CreateProjectPage'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import "./App.scss";
+import { UserProvider } from "./contexts/UserContext";
+import Header from "./components/Header/Header";
+import Footer from "./components/Footer/Footer";
+import HomePage from "./pages/HomePage";
+import ProjectsPage from "./pages/ProjectsPage/ProjectsPage";
+import AboutPage from "./pages/AboutPage/AboutPage";
+import RulesPage from "./pages/RulesPage/RulesPage";
+import SafetyPage from "./pages/SafetyPage/SafetyPage";
+import AuthPage from "./pages/AuthPage/AuthPage";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import CreateProjectPage from "./pages/CreateProjectPage/CreateProjectPage";
+import ChatPage from "./pages/ChatPage/ChatPage";
+import FreelancersPage from "./pages/FreelancersPage/FreelancersPage";
+import FreelancerProfilePage from "./pages/FreelancerProfilePage/FreelancerProfilePage";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
   return (
@@ -29,12 +32,18 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile-setup" element={<ProfilePage />} />
             <Route path="/create-project" element={<CreateProjectPage />} />
+            <Route path="/chat/:projectId" element={<ChatPage />} />
+            <Route path="/freelancers" element={<FreelancersPage />} />
+            <Route
+              path="/profile/:freelancerId"
+              element={<FreelancerProfilePage />}
+            />
           </Routes>
           <Footer />
         </div>
       </Router>
     </UserProvider>
-  )
+  );
 }
 
-export default App
+export default App;
