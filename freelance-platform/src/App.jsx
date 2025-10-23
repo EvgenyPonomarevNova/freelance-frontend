@@ -15,6 +15,7 @@ import FreelancersPage from "./pages/FreelancersPage/FreelancersPage";
 import FreelancerProfilePage from "./pages/FreelancerProfilePage/FreelancerProfilePage";
 import HowItWorksPage from './pages/HowItWorksPage/HowItWorksPage'
 import MyProjectsPage from './pages/MyProjectsPage/MyProjectsPage'
+import SettingsPage from './pages/SettingsPage/SettingsPage'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
             <Route path="/freelancers" element={<FreelancersPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/my-projects" element={<MyProjectsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/profile/:freelancerId"
               element={<FreelancerProfilePage />}
