@@ -12,39 +12,44 @@ function ChatPage() {
   const getChatInfo = () => {
     if (!projectId || !user) return null
 
-    // Если это чат между пользователями (начинается с chat_)
-    if (projectId.startsWith('chat_')) {
-      const chats = JSON.parse(localStorage.getItem('user_chats') || '{}')
-      const chat = chats[projectId]
-      
-      if (chat) {
-        const counterpart = chat.participants.find(p => p.id !== user.id)
-        return {
-          counterpart: counterpart || { id: 'unknown', name: 'Пользователь' },
-          projectTitle: `Чат с ${counterpart?.name || 'пользователем'}`
-        }
-      }
-    }
-
-    // Если это чат проекта
+    // Ищем проект в localStorage
     const projects = JSON.parse(localStorage.getItem('nexus_projects') || '[]')
-    const project = projects.find(p => p.id === projectId)
+    const project = projects.find(p => p.id == projectId) // Используем == вместо === для сравнения чисел и строк
     
     if (project) {
       // Определяем собеседника
       let counterpart = null
-      if (user.role === 'freelancer') {
-        counterpart = project.client
-      } else if (user.role === 'client') {
-        // Находим фрилансера, который откликнулся на проект
-        const userResponse = project.responses?.find(r => r.freelancer.id === user.id)
-        if (userResponse) {
-          counterpart = userResponse.freelancer
+      
+      if (user.role === 'client') {
+        // Если пользователь клиент, ищем фрилансера в responses
+        const response = project.responses?.[0]
+        if (response && response.freelancer) {
+          counterpart = {
+            id: response.freelancer.id,
+            name: response.freelancer.profile?.name || 'Фрилансер',
+            avatar: response.freelancer.profile?.avatar,
+            title: response.freelancer.profile?.title
+          }
+        }
+      } else if (user.role === 'freelancer') {
+        // Если пользователь фрилансер, собеседник - клиент
+        if (project.client) {
+          counterpart = {
+            id: project.client.id,
+            name: project.client.profile?.name || 'Клиент',
+            avatar: project.client.profile?.avatar,
+            title: project.client.profile?.title
+          }
         }
       }
       
       return {
-        counterpart: counterpart || { id: 'unknown', name: 'Участник проекта' },
+        counterpart: counterpart || { 
+          id: 'unknown', 
+          name: 'Собеседник',
+          avatar: '',
+          title: ''
+        },
         projectTitle: project.title
       }
     }
@@ -70,7 +75,13 @@ function ChatPage() {
       <div className="chat-page">
         <div className="chat-not-found">
           <h3>Чат не найден</h3>
-          <p>Возможно, у вас нет доступа к этому чату</p>
+          <p>Возможно, у вас нет доступа к этому чату или проект был удален</p>
+          <button 
+            onClick={() => window.history.back()} 
+            className="btn btn-primary"
+          >
+            Вернуться назад
+          </button>
         </div>
       </div>
     )

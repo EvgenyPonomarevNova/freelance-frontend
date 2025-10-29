@@ -1,169 +1,238 @@
 // src/services/api.js
 class ApiService {
   constructor() {
-    this.baseURL = 'http://localhost:3001/api'
-    this.isMockMode = false
+    // Используем переменную окружения или fallback на localhost
+    this.baseURL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+    this.isMockMode = false;
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`
+    const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
-    }
+    };
 
-    // Добавляем токен авторизации
-    const token = localStorage.getItem('auth_token')
+    // Добавляем токен авторизации - используем ЕДИНЫЙ ключ 'token'
+    const token = localStorage.getItem("token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Если есть тело запроса, преобразуем в JSON
-    if (config.body && typeof config.body === 'object') {
-      config.body = JSON.stringify(config.body)
+    if (config.body && typeof config.body === "object") {
+      config.body = JSON.stringify(config.body);
     }
 
     try {
-      const response = await fetch(url, config)
-      
+      const response = await fetch(url, config);
+
       if (!response.ok) {
         // Если 401 - неавторизован, очищаем токен
         if (response.status === 401) {
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('current_user')
-          window.location.href = '/login'
+          localStorage.removeItem("token");
+          localStorage.removeItem("current_user");
         }
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      return await response.json()
-      
+
+      return await response.json();
     } catch (error) {
-      console.error('API request failed:', error)
-      throw error
+      console.error("API request failed:", error);
+      throw error;
     }
   }
 
   // Auth methods
   async login(email, password) {
-    const response = await this.request('/auth/login', {
-      method: 'POST',
+    const response = await this.request("/auth/login", {
+      method: "POST",
       body: { email, password },
-    })
-    
-    // Сохраняем токен и пользователя
+    });
+
+    // Сохраняем токен и пользователя - используем ЕДИНЫЙ ключ 'token'
     if (response.token) {
-      localStorage.setItem('auth_token', response.token)
-      localStorage.setItem('current_user', JSON.stringify(response.user))
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("current_user", JSON.stringify(response.user));
     }
-    
-    return response
+
+    return response;
   }
 
   async register(userData) {
-    const response = await this.request('/auth/register', {
-      method: 'POST',
+    const response = await this.request("/auth/register", {
+      method: "POST",
       body: userData,
-    })
-    
-    // Сохраняем токен и пользователя
+    });
+
+    // Сохраняем токен и пользователя - используем ЕДИНЫЙ ключ 'token'
     if (response.token) {
-      localStorage.setItem('auth_token', response.token)
-      localStorage.setItem('current_user', JSON.stringify(response.user))
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("current_user", JSON.stringify(response.user));
     }
-    
-    return response
+
+    return response;
   }
 
   async getCurrentUser() {
     try {
-      const response = await this.request('/auth/me')
-      return response.user
+      const response = await this.request("/auth/me");
+
+      // Обновляем пользователя в localStorage
+      if (response.user) {
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+      }
+
+      return response;
     } catch (error) {
       // Если ошибка авторизации, очищаем localStorage
-      if (error.message.includes('401')) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('current_user')
+      if (error.message.includes("401")) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("current_user");
       }
-      return null
+      throw error;
     }
   }
 
   // Project methods
   async getProjects(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString()
-    return this.request(`/projects?${queryParams}`)
+    const queryParams = new URLSearchParams(filters).toString();
+    return this.request(`/projects?${queryParams}`);
   }
 
   async createProject(projectData) {
-    return this.request('/projects', {
-      method: 'POST',
+    return this.request("/projects", {
+      method: "POST",
       body: projectData,
-    })
+    });
   }
 
   async getProject(projectId) {
-    return this.request(`/projects/${projectId}`)
+    return this.request(`/projects/${projectId}`);
   }
 
   async respondToProject(projectId, responseData) {
     return this.request(`/projects/${projectId}/respond`, {
-      method: 'POST',
+      method: "POST",
       body: responseData,
-    })
+    });
   }
 
   async getMyResponses() {
-    return this.request('/projects/my/responses')
+    return this.request("/projects/my/responses");
   }
 
   async getMyProjects() {
-    return this.request('/projects/client/my-projects')
+    return this.request("/projects/client/my-projects");
   }
 
   async updateResponseStatus(projectId, responseId, status) {
     return this.request(`/projects/${projectId}/responses/${responseId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: { status },
-    })
+    });
   }
 
   // User methods
   async getFreelancers(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString()
-    return this.request(`/users/freelancers?${queryParams}`)
+    const queryParams = new URLSearchParams(filters).toString();
+    return this.request(`/users/freelancers?${queryParams}`);
   }
 
   async getUserProfile(userId) {
-    return this.request(`/users/${userId}`)
+    return this.request(`/users/${userId}`);
   }
 
   async updateProfile(profileData) {
-    return this.request('/users/profile', {
-      method: 'PATCH',
+    return this.request("/users/profile", {
+      method: "PATCH",
       body: profileData,
-    })
+    });
   }
 
   // Chat methods
   async sendMessage(messageData) {
-    return this.request('/chat/message', {
-      method: 'POST',
+    return this.request("/chat/message", {
+      method: "POST",
       body: messageData,
-    })
+    });
   }
 
   async getMessages(projectId) {
-    return this.request(`/chat/${projectId}/messages`)
+    return this.request(`/chat/${projectId}/messages`);
   }
 
   logout() {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('current_user')
+    localStorage.removeItem("token");
+    localStorage.removeItem("current_user");
+  }
+  // OAuth авторизация
+  async oauthLogin(provider, code) {
+    const response = await fetch(`${API_BASE_URL}/auth/oauth/${provider}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        redirect_uri: `${window.location.origin}/oauth-callback`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "OAuth authentication failed");
+    }
+
+    return await response.json();
+  }
+
+  // Связывание OAuth с аккаунтом
+  async linkOAuthAccount(provider, code) {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `${API_BASE_URL}/auth/oauth/${provider}/link`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to link OAuth account");
+    }
+
+    return await response.json();
+  }
+
+  // Отвязывание OAuth аккаунта
+  async unlinkOAuthAccount(provider) {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `${API_BASE_URL}/auth/oauth/${provider}/unlink`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to unlink OAuth account");
+    }
+
+    return await response.json();
   }
 }
 
-export const apiService = new ApiService()
+export const apiService = new ApiService();

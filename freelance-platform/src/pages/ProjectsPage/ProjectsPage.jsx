@@ -1,7 +1,8 @@
-// pages/ProjectsPage/ProjectsPage.jsx
+// ProjectsPage.jsx - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import './ProjectsPage.scss'
 import { useState, useEffect, useMemo } from 'react'
 import ProjectCard from '../../components/ProjectCard/ProjectCard'
+import { apiService } from '../../services/api' // ✅ ДОБАВЬТЕ ИМПОРТ
 
 function ProjectsPage() {
   const [projects, setProjects] = useState([])
@@ -18,20 +19,30 @@ function ProjectsPage() {
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  // Загрузка проектов
+  // Загрузка проектов ИЗ РЕАЛЬНОГО API
   useEffect(() => {
     loadProjects()
   }, [])
 
-  const loadProjects = () => {
-    setTimeout(() => {
-      const savedProjects = JSON.parse(localStorage.getItem('nexus_projects') || '[]')
-      setProjects(savedProjects)
+  const loadProjects = async () => {
+    try {
+      setLoading(true)
+      console.log('Loading projects from real API...')
+      
+      const response = await apiService.getProjects()
+      console.log('Projects from API:', response.projects)
+      
+      setProjects(response.projects || [])
+    } catch (error) {
+      console.error('Failed to load projects from API:', error)
+      // Если API не работает, покажем пустой список
+      setProjects([])
+    } finally {
       setLoading(false)
-    }, 800)
+    }
   }
 
-  // Фильтрация и сортировка
+  // Фильтрация и сортировка (обновим для работы с реальными данными)
   const filteredAndSortedProjects = useMemo(() => {
     let filtered = projects.filter(project => {
       // Поиск по тексту
@@ -39,9 +50,7 @@ function ProjectsPage() {
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.skills?.some(skill => 
-          typeof skill === 'string' 
-            ? skill.toLowerCase().includes(searchTerm.toLowerCase())
-            : skill.skill?.toLowerCase().includes(searchTerm.toLowerCase())
+          skill.toLowerCase().includes(searchTerm.toLowerCase())
         )
 
       // Фильтр по категории
@@ -52,19 +61,16 @@ function ProjectsPage() {
       const matchesBudgetMin = !filters.budgetMin || projectBudget >= parseInt(filters.budgetMin)
       const matchesBudgetMax = !filters.budgetMax || projectBudget <= parseInt(filters.budgetMax)
 
-      // Фильтр по опыту
-      const matchesExperience = !filters.experience || project.experience === filters.experience
-
-      return matchesSearch && matchesCategory && matchesBudgetMin && matchesBudgetMax && matchesExperience
+      return matchesSearch && matchesCategory && matchesBudgetMin && matchesBudgetMax
     })
 
     // Сортировка
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.createdAt) - new Date(a.createdAt)
+          return new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
         case 'oldest':
-          return new Date(a.createdAt) - new Date(b.createdAt)
+          return new Date(a.createdAt || a.created_at) - new Date(b.createdAt || b.created_at)
         case 'budget_high':
           return (parseInt(b.budget) || 0) - (parseInt(a.budget) || 0)
         case 'budget_low':
@@ -78,6 +84,8 @@ function ProjectsPage() {
 
     return filtered
   }, [projects, searchTerm, sortBy, filters])
+
+  // ... остальной код без изменений
 
   const categories = [
     { value: '', label: 'Все категории' },

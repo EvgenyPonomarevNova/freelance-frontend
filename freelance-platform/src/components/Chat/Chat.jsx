@@ -17,6 +17,7 @@ function Chat({ projectId, counterpart }) {
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
   const typingTimeoutRef = useRef(null)
+  const textareaRef = useRef(null)
 
   // Загружаем историю сообщений
   useEffect(() => {
@@ -29,8 +30,15 @@ function Chat({ projectId, counterpart }) {
     scrollToBottom()
   }, [messages])
 
+  // Автоматическое изменение высоты textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px'
+    }
+  }, [newMessage])
+
   const simulateOnlineStatus = () => {
-    // Имитация онлайн статуса
     setIsOnline(Math.random() > 0.3)
   }
 
@@ -44,39 +52,20 @@ function Chat({ projectId, counterpart }) {
     const chatKey = `chat_${projectId}_${user.id}_${counterpart.id}`
     const savedMessages = JSON.parse(localStorage.getItem(chatKey) || '[]')
     
-    // Добавляем демо-сообщения если чат пустой
+    // Добавляем только одно приветственное сообщение если чат пустой
     if (savedMessages.length === 0) {
-      const demoMessages = [
-        {
-          id: '1',
-          text: 'Здравствуйте! Интересует ваш проект.',
-          senderId: counterpart.id,
-          senderName: counterpart.name,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          isRead: true,
-          type: 'text'
-        },
-        {
-          id: '2',
-          text: 'Привет! Расскажите подробнее о задаче.',
-          senderId: user.id,
-          senderName: user.profile?.name || 'Вы',
-          timestamp: new Date(Date.now() - 3500000).toISOString(),
-          isRead: true,
-          type: 'text'
-        },
-        {
-          id: '3',
-          text: 'Нужно разработать лендинг для SaaS продукта. Есть ТЗ?',
-          senderId: counterpart.id,
-          senderName: counterpart.name,
-          timestamp: new Date(Date.now() - 3400000).toISOString(),
-          isRead: true,
-          type: 'text'
-        }
-      ]
-      localStorage.setItem(chatKey, JSON.stringify(demoMessages))
-      setMessages(demoMessages)
+      const welcomeMessage = {
+        id: '1',
+        text: `Здравствуйте! Рад начать работу с вами над проектом.`,
+        senderId: counterpart.id,
+        senderName: counterpart.name,
+        timestamp: new Date().toISOString(),
+        isRead: true,
+        type: 'text'
+      }
+      const updatedMessages = [welcomeMessage]
+      localStorage.setItem(chatKey, JSON.stringify(updatedMessages))
+      setMessages(updatedMessages)
     } else {
       setMessages(savedMessages)
     }
@@ -148,12 +137,16 @@ function Chat({ projectId, counterpart }) {
       setAttachments([])
       setIsTyping(false)
       
+      // Сброс высоты textarea
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto'
+      }
+      
       // Симуляция ответа
       simulateResponse()
       
     } catch (error) {
       console.error('Ошибка отправки сообщения:', error)
-      alert('Не удалось отправить сообщение')
     } finally {
       setIsLoading(false)
     }
@@ -166,7 +159,7 @@ function Chat({ projectId, counterpart }) {
       
       const responseMessage = {
         id: `response_${Date.now()}`,
-        text: 'Спасибо за информацию! Изучу и отвечу.',
+        text: 'Спасибо за сообщение!',
         senderId: counterpart.id,
         senderName: counterpart.name,
         timestamp: new Date().toISOString(),
@@ -177,7 +170,7 @@ function Chat({ projectId, counterpart }) {
       const updatedMessages = [...savedMessages, responseMessage]
       localStorage.setItem(chatKey, JSON.stringify(updatedMessages))
       setMessages(updatedMessages)
-    }, 2000)
+    }, 2000 + Math.random() * 2000)
   }
 
   const handleFileSelect = (e) => {
@@ -192,7 +185,7 @@ function Chat({ projectId, counterpart }) {
     })
     
     setAttachments(prev => [...prev, ...validFiles])
-    e.target.value = '' // Сброс input
+    e.target.value = ''
   }
 
   const removeAttachment = (index) => {
@@ -263,6 +256,7 @@ function Chat({ projectId, counterpart }) {
   if (!user || !counterpart) {
     return (
       <div className="chat-error">
+        <div className="error-icon">⚠️</div>
         <p>Не удалось загрузить чат</p>
       </div>
     )
@@ -274,7 +268,7 @@ function Chat({ projectId, counterpart }) {
       <div className="chat-header">
         <div className="counterpart-info">
           <div className="avatar">
-            {counterpart.name?.split(' ').map(n => n[0]).join('') || 'U'}
+            {counterpart.avatar || counterpart.name?.split(' ').map(n => n[0]).join('') || 'U'}
           </div>
           <div className="info">
             <h4>{counterpart.name}</h4>
@@ -292,10 +286,16 @@ function Chat({ projectId, counterpart }) {
             onClick={() => setShowSearch(!showSearch)}
             title="Поиск сообщений"
           >
-            🔍
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
           <button className="action-btn" title="Информация о чате">
-            ⓘ
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="8" r="1" fill="currentColor"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -303,23 +303,27 @@ function Chat({ projectId, counterpart }) {
       {/* Поиск сообщений */}
       {showSearch && (
         <div className="search-container">
-          <input
-            type="text"
-            placeholder="Поиск сообщений..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          {searchTerm && (
-            <button 
-              className="clear-search"
-              onClick={() => setSearchTerm('')}
-            >
-              ✕
-            </button>
-          )}
-          <div className="search-results">
-            Найдено: {filteredMessages.length} сообщений
+          <div className="search-input-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="search-icon">
+              <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Поиск сообщений..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button 
+                className="clear-search"
+                onClick={() => setSearchTerm('')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -329,8 +333,7 @@ function Chat({ projectId, counterpart }) {
         {messages.length === 0 ? (
           <div className="no-messages">
             <div className="icon">💬</div>
-            <p>Начните общение</p>
-            <span>Напишите первое сообщение</span>
+            <h3>Нет сообщений</h3>
           </div>
         ) : (
           <div className="messages">
@@ -375,15 +378,29 @@ function Chat({ projectId, counterpart }) {
                           href={message.file?.url} 
                           download={message.file?.name}
                           className="download-btn"
+                          title="Скачать файл"
                         >
-                          📥
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                         </a>
                       </div>
                     ) : (
-                      <p>{message.text}</p>
+                      <div className="text-message">
+                        <p>{message.text}</p>
+                      </div>
                     )}
                     
-                    <span className="time">{formatTime(message.timestamp)}</span>
+                    <div className="message-meta">
+                      <span className="time">{formatTime(message.timestamp)}</span>
+                      {message.senderId === user.id && (
+                        <span className="read-status">
+                          {message.isRead ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -397,7 +414,7 @@ function Chat({ projectId, counterpart }) {
       {attachments.length > 0 && (
         <div className="attachments-preview">
           <div className="attachments-header">
-            <span>Прикрепленные файлы:</span>
+            <span>Прикрепленные файлы ({attachments.length})</span>
             <button 
               onClick={() => setAttachments([])}
               className="clear-attachments"
@@ -411,12 +428,18 @@ function Chat({ projectId, counterpart }) {
                 <span className="file-icon">
                   {getFileIcon(file.type)}
                 </span>
-                <span className="file-name">{file.name}</span>
+                <span className="file-name" title={file.name}>
+                  {file.name.length > 25 ? file.name.substring(0, 25) + '...' : file.name}
+                </span>
+                <span className="file-size">{formatFileSize(file.size)}</span>
                 <button 
                   onClick={() => removeAttachment(index)}
                   className="remove-attachment"
+                  title="Удалить файл"
                 >
-                  ✕
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
               </div>
             ))}
@@ -439,12 +462,15 @@ function Chat({ projectId, counterpart }) {
             onClick={() => fileInputRef.current?.click()}
             title="Прикрепить файл"
           >
-            📎
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59723 21.9983 8.005 21.9983C6.41277 21.9983 4.8858 21.3658 3.76 20.24C2.6342 19.1142 2.00167 17.5872 2.00167 15.995C2.00167 14.4028 2.6342 12.8758 3.76 11.75L12.33 3.18C13.0847 2.42533 14.0588 1.99753 15.085 1.99753C16.1112 1.99753 17.0853 2.42533 17.84 3.18C18.5947 3.93467 19.0225 4.9088 19.0225 5.935C19.0225 6.9612 18.5947 7.93533 17.84 8.69L9.83 16.69C9.47778 17.0422 8.98417 17.2225 8.47 17.2225C7.95583 17.2225 7.46222 17.0422 7.11 16.69C6.75778 16.3378 6.5775 15.8442 6.5775 15.33C6.5775 14.8158 6.75778 14.3222 7.11 13.97L14.15 6.93" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         </div>
         
         <div className="input-wrapper">
           <textarea
+            ref={textareaRef}
             value={newMessage}
             onChange={(e) => {
               setNewMessage(e.target.value)
@@ -454,14 +480,22 @@ function Chat({ projectId, counterpart }) {
             placeholder="Введите сообщение..."
             rows="1"
             disabled={isLoading}
+            className="message-input"
           />
           
           <button 
             onClick={sendMessage}
             disabled={(!newMessage.trim() && attachments.length === 0) || isLoading}
-            className="send-btn"
+            className={`send-btn ${isLoading ? 'loading' : ''}`}
+            title="Отправить сообщение"
           >
-            {isLoading ? '⏳' : '📨'}
+            {isLoading ? (
+              <div className="loading-spinner"></div>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </button>
         </div>
       </div>

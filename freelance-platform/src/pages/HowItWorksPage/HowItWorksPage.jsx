@@ -1,7 +1,12 @@
 // pages/HowItWorksPage/HowItWorksPage.jsx
 import './HowItWorksPage.scss'
+import { useUser } from '../../contexts/UserContext'
+import { useNavigate } from 'react-router-dom'
 
 function HowItWorksPage() {
+  const { user } = useUser()
+  const navigate = useNavigate()
+
   const steps = [
     {
       number: '01',
@@ -11,8 +16,10 @@ function HowItWorksPage() {
     },
     {
       number: '02',
-      title: 'Найдите подходящий проект или исполнителя',
-      description: 'Используйте фильтры и поиск для быстрого поиска',
+      title: user?.role === 'client' ? 'Найдите исполнителя' : 'Найдите подходящий проект',
+      description: user?.role === 'client' 
+        ? 'Используйте фильтры для поиска квалифицированных фрилансеров' 
+        : 'Используйте фильтры и поиск для быстрого поиска проектов',
       icon: '🔍'
     },
     {
@@ -53,10 +60,59 @@ function HowItWorksPage() {
     }
   ]
 
+  const handleFindProject = () => {
+    navigate('/projects')
+  }
+
+  const handleFindFreelancer = () => {
+    navigate('/freelancers')
+  }
+
+  const handleRegister = () => {
+    navigate('/register')
+  }
+
+  // Определяем текст и кнопки в зависимости от роли пользователя
+  const getCtaContent = () => {
+    if (!user) {
+      return {
+        title: 'Готовы начать?',
+        description: 'Присоединяйтесь к тысячам успешных фрилансеров и заказчиков',
+        buttons: [
+          { text: 'Зарегистрироваться', onClick: handleRegister, type: 'primary' },
+          { text: 'Узнать больше', onClick: () => navigate('/about'), type: 'secondary' }
+        ]
+      }
+    }
+
+    if (user.role === 'client') {
+      return {
+        title: 'Найдите идеального исполнителя',
+        description: 'Начните сотрудничество с квалифицированными фрилансерами',
+        buttons: [
+          { text: 'Найти исполнителя', onClick: handleFindFreelancer, type: 'primary' },
+          { text: 'Создать проект', onClick: () => navigate('/create-project'), type: 'secondary' }
+        ]
+      }
+    }
+
+    // Для фрилансеров
+    return {
+      title: 'Найдите интересные проекты',
+      description: 'Начните зарабатывать на любимом деле',
+      buttons: [
+        { text: 'Найти проект', onClick: handleFindProject, type: 'primary' },
+        { text: 'Пополнить портфолио', onClick: () => navigate('/profile'), type: 'secondary' }
+      ]
+    }
+  }
+
+  const ctaContent = getCtaContent()
+
   return (
     <div className="how-it-works-page">
       <div className="page-header">
-        <h1>Как работает NexusHub</h1>
+        <h1>Как работает FreelanceHub</h1>
         <p>Простой и прозрачный процесс для эффективной работы</p>
       </div>
 
@@ -77,7 +133,7 @@ function HowItWorksPage() {
       </div>
 
       <div className="features-section">
-        <h2>Почему выбирают NexusHub?</h2>
+        <h2>Почему выбирают FreelanceHub?</h2>
         <div className="features-grid">
           {features.map((feature, index) => (
             <div key={index} className="feature-card">
@@ -90,11 +146,18 @@ function HowItWorksPage() {
       </div>
 
       <div className="cta-section">
-        <h2>Готовы начать?</h2>
-        <p>Присоединяйтесь к тысячам успешных фрилансеров и заказчиков</p>
+        <h2>{ctaContent.title}</h2>
+        <p>{ctaContent.description}</p>
         <div className="cta-buttons">
-          <button className="cta-btn primary">Найти проект</button>
-          <button className="cta-btn secondary">Найти исполнителя</button>
+          {ctaContent.buttons.map((button, index) => (
+            <button
+              key={index}
+              className={`cta-btn ${button.type}`}
+              onClick={button.onClick}
+            >
+              {button.text}
+            </button>
+          ))}
         </div>
       </div>
     </div>

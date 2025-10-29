@@ -4,19 +4,29 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 function HomePage() {
+  const [showEarlyAccess, setShowEarlyAccess] = useState(false)
+
+  // Показываем баннер через 2 секунды после загрузки
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowEarlyAccess(true)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const [stats, setStats] = useState([
-    { value: '50M+', label: 'Зарегистрированных пользователей' },
-    { value: '25M+', label: 'Выполненных проектов' },
-    { value: '₽150B+', label: 'Выплачено фрилансерам' }
+    { value: '1,000+', label: 'Ожидают запуска' },
+    { value: '50+', label: 'Уже оставили заявку' },
+    { value: '0%', label: 'Комиссия для первых' }
   ])
 
   const categories = [
-    { icon: '💻', name: 'Разработка', count: '245k проектов' },
-    { icon: '🎨', name: 'Дизайн', count: '180k проектов' },
-    { icon: '📝', name: 'Тексты', count: '95k проектов' },
-    { icon: '📊', name: 'Маркетинг', count: '120k проектов' },
-    { icon: '🔍', name: 'SEO', count: '65k проектов' },
-    { icon: '📱', name: 'Мобильные приложения', count: '85k проектов' }
+    { icon: '💻', name: 'Разработка', count: 'Скоро доступно' },
+    { icon: '🎨', name: 'Дизайн', count: 'Скоро доступно' },
+    { icon: '📝', name: 'Тексты', count: 'Скоро доступно' },
+    { icon: '📊', name: 'Маркетинг', count: 'Скоро доступно' },
+    { icon: '🔍', name: 'SEO', count: 'Скоро доступно' },
+    { icon: '📱', name: 'Мобильные приложения', count: 'Скоро доступно' }
   ]
 
   const howItWorks = [
@@ -42,36 +52,63 @@ function HomePage() {
 
   const testimonials = [
     {
-      text: 'NexusHub изменил мой подход к найму. Теперь я нахожу талантливых специалистов за несколько часов, а не недель.',
-      author: 'Анна Петрова',
-      role: 'CEO, TechStart',
-      avatar: '👩‍💼'
-    },
-    {
-      text: 'Как фрилансер, я нашел стабильный поток интересных проектов. Платформа действительно работает!',
-      author: 'Иван Сидоров',
-      role: 'Fullstack разработчик',
-      avatar: '👨‍💻'
+      text: 'FreelanceHab изменит подход к найму. Теперь можно находить талантливых специалистов за несколько часов.',
+      author: 'Команда FreelanceHab',
+      role: 'Основатели проекта',
+      avatar: '🚀'
     }
   ]
 
   return (
     <div className="home-page">
+      {/* Early Access Banner */}
+      {showEarlyAccess && (
+        <div className="early-access-banner">
+          <div className="banner-content">
+            <div className="banner-text">
+              <span className="banner-badge">🚀 СКОРО ЗАПУСК</span>
+              <h3>Станьте одним из первых пользователей FreelanceHab!</h3>
+              <p>Получите ранний доступ и особые условия при запуске</p>
+            </div>
+            <div className="banner-actions">
+              <Link to="/early-access" className="btn btn-primary">
+                Получить ранний доступ
+              </Link>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowEarlyAccess(false)}
+              >
+                Смотреть дальше
+              </button>
+            </div>
+            <button 
+              className="banner-close"
+              onClick={() => setShowEarlyAccess(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
           <div className="hero-text">
-            <h1 className="hero-title">
-              Наймите лучших<br />
-              <span className="gradient-text">фрилансеров</span><br />
-              для любого проекта
-            </h1>
+            <div className="construction-notice">
+              <span className="construction-badge">🏗️ В АКТИВНОЙ РАЗРАБОТКЕ</span>
+              <h1 className="hero-title">
+                Новая фриланс-биржа<br />
+                <span className="gradient-text">FreelanceHab</span><br />
+                скоро откроется!
+              </h1>
+            </div>
             <p className="hero-subtitle">
-              Присоединяйтесь к миллионам людей, использующих NexusHub для превращения своих идей в реальность
+              Присоединяйтесь к списку ожидания и получите эксклюзивные преимущества при запуске платформы
             </p>
             <div className="hero-buttons">
-              <Link to="/register" className="btn btn-primary">
-                Начать сейчас
+              <Link to="/early-access" className="btn btn-primary">
+                🚀 Получить ранний доступ
               </Link>
               <Link to="/how-it-works" className="btn btn-secondary">
                 Как это работает
@@ -91,34 +128,34 @@ function HomePage() {
               <div className="card-header">
                 <span className="avatar">👨‍💼</span>
                 <div className="user-info">
-                  <strong>Маркетолог</strong>
-                  <span>⭐ 4.9 (127 отзывов)</span>
+                  <strong>Заказчик</strong>
+                  <span>Ищет специалиста</span>
                 </div>
               </div>
               <p>Нужен SMM специалист для продвижения бренда...</p>
-              <div className="card-budget">Бюджет: ₽15,000 - ₽30,000</div>
+              <div className="card-budget">Скоро на FreelanceHab</div>
             </div>
             <div className="floating-card card-2">
               <div className="card-header">
                 <span className="avatar">👩‍🎨</span>
                 <div className="user-info">
                   <strong>Дизайнер UI/UX</strong>
-                  <span>⭐ 5.0 (89 отзывов)</span>
+                  <span>Готов к проектам</span>
                 </div>
               </div>
               <p>Создание современного дизайна для мобильного приложения...</p>
-              <div className="card-budget">Бюджет: ₽25,000 - ₽50,000</div>
+              <div className="card-budget">Скоро на FreelanceHab</div>
             </div>
             <div className="floating-card card-3">
               <div className="card-header">
                 <span className="avatar">👨‍💻</span>
                 <div className="user-info">
                   <strong>React разработчик</strong>
-                  <span>⭐ 4.8 (204 отзыва)</span>
+                  <span>В поиске работы</span>
                 </div>
               </div>
               <p>Разработка корпоративного портала на React...</p>
-              <div className="card-budget">Бюджет: ₽50,000 - ₽100,000</div>
+              <div className="card-budget">Скоро на FreelanceHab</div>
             </div>
           </div>
         </div>
@@ -127,16 +164,16 @@ function HomePage() {
       {/* Categories Section */}
       <section className="categories-section">
         <div className="container">
-          <h2 className="section-title">Популярные категории</h2>
+          <h2 className="section-title">Категории проектов</h2>
           <div className="categories-grid">
             {categories.map((category, index) => (
               <div key={index} className="category-card">
                 <div className="category-icon">{category.icon}</div>
                 <h3>{category.name}</h3>
                 <p>{category.count}</p>
-                <Link to="/projects" className="category-link">
-                  Найти специалистов →
-                </Link>
+                <div className="category-link">
+                  Скоро доступно →
+                </div>
               </div>
             ))}
           </div>
@@ -146,7 +183,7 @@ function HomePage() {
       {/* How It Works Section */}
       <section className="how-it-works-section">
         <div className="container">
-          <h2 className="section-title">Как работает NexusHub</h2>
+          <h2 className="section-title">Как будет работать FreelanceHab</h2>
           <div className="steps-grid">
             {howItWorks.map((step, index) => (
               <div key={index} className="step-card">
@@ -163,7 +200,7 @@ function HomePage() {
       {/* Testimonials Section */}
       <section className="testimonials-section">
         <div className="container">
-          <h2 className="section-title">Что говорят наши пользователи</h2>
+          <h2 className="section-title">О проекте</h2>
           <div className="testimonials-grid">
             {testimonials.map((testimonial, index) => (
               <div key={index} className="testimonial-card">
@@ -185,14 +222,11 @@ function HomePage() {
       <section className="cta-section">
         <div className="container">
           <div className="cta-content">
-            <h2>Готовы начать?</h2>
-            <p>Присоединяйтесь к NexusHub сегодня и откройте новые возможности</p>
+            <h2>Готовы стать первыми?</h2>
+            <p>Присоединяйтесь к списку ожидания и получите особые условия при запуске</p>
             <div className="cta-buttons">
-              <Link to="/register" className="btn btn-primary btn-large">
-                Создать аккаунт
-              </Link>
-              <Link to="/projects" className="btn btn-secondary btn-large">
-                Найти проекты
+              <Link to="/early-access" className="btn btn-primary btn-large">
+                🚀 Стать первым пользователем
               </Link>
             </div>
           </div>

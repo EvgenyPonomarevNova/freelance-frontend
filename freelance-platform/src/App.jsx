@@ -16,6 +16,8 @@ import FreelancerProfilePage from "./pages/FreelancerProfilePage/FreelancerProfi
 import HowItWorksPage from './pages/HowItWorksPage/HowItWorksPage'
 import MyProjectsPage from './pages/MyProjectsPage/MyProjectsPage'
 import SettingsPage from './pages/SettingsPage/SettingsPage'
+import OAuthCallback from './pages/OAuthCallback/OAuthCallback';
+import ChatsPage from "./pages/ChatsPage/ChatsPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -40,6 +42,8 @@ function App() {
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/my-projects" element={<MyProjectsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/oauth-callback" element={<OAuthCallback />} />
+            <Route path="/chats" element={<ChatsPage />} />
             <Route
               path="/profile/:freelancerId"
               element={<FreelancerProfilePage />}

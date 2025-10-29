@@ -1,9 +1,11 @@
+// src/components/RegisterForm/RegisterForm.jsx
 import "./RegisterForm.scss";
 import { useState } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
+import OAuthButtons from "../OAuthButtons/OAuthButtons"; // Добавьте этот импорт
 
-function RegisterForm() {
+function RegisterForm({ onSuccess }) {
   const { register } = useUser();
   const navigate = useNavigate();
 
@@ -26,7 +28,6 @@ function RegisterForm() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Очищаем ошибки при изменении
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -39,14 +40,12 @@ function RegisterForm() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Email обязателен";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Некорректный формат email";
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = "Пароль обязателен";
     } else if (formData.password.length < 6) {
@@ -55,19 +54,16 @@ function RegisterForm() {
       newErrors.password = "Пароль должен содержать заглавные и строчные буквы";
     }
 
-    // Confirm password
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Пароли не совпадают";
     }
 
-    // Full name validation
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Имя обязательно";
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = "Имя должно содержать минимум 2 символа";
     }
 
-    // Terms agreement
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "Необходимо согласие с условиями";
     }
@@ -86,7 +82,6 @@ function RegisterForm() {
     setIsLoading(true);
 
     try {
-      // Подготавливаем данные для регистрации
       const registrationData = {
         email: formData.email.trim(),
         password: formData.password,
@@ -94,10 +89,8 @@ function RegisterForm() {
         role: formData.role
       };
 
-      // Вызываем register из UserContext
       await register(registrationData);
-      
-      // Успешная регистрация - редирект
+      onSuccess?.();
       navigate("/profile-setup", { 
         state: { 
           welcome: true,
@@ -106,7 +99,6 @@ function RegisterForm() {
       });
       
     } catch (error) {
-      // Обрабатываем ошибки от authService
       let errorMessage = 'Произошла ошибка при регистрации';
       
       if (error.message.includes('уже существует')) {
@@ -340,6 +332,9 @@ function RegisterForm() {
             'Создать аккаунт'
           )}
         </button>
+
+        {/* OAuth кнопки для регистрации */}
+        <OAuthButtons type="register" isLoading={isLoading} />
 
         <div className="form-footer">
           <p>

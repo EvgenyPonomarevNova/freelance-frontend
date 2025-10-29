@@ -1,10 +1,12 @@
+// src/components/LoginForm/LoginForm.jsx
 import './LoginForm.scss'
 import { useState } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useNavigate, useLocation } from 'react-router-dom'
+import OAuthButtons from '../OAuthButtons/OAuthButtons' // Добавьте этот импорт
 
-function LoginForm() {
-  const { login } = useUser()
+function LoginForm({ onSuccess }) {
+  const { login, quickOAuthLogin } = useUser()
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -17,7 +19,6 @@ function LoginForm() {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
-  // Получаем путь для редиректа после логина (если был переход с другой страницы)
   const from = location.state?.from?.pathname || '/profile'
 
   const handleChange = (e) => {
@@ -27,12 +28,10 @@ function LoginForm() {
       [name]: type === 'checkbox' ? checked : value
     }))
     
-    // Очищаем ошибку при изменении поля
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
     
-    // Очищаем общую ошибку при любом изменении
     if (errors.submit) {
       setErrors(prev => ({ ...prev, submit: '' }))
     }
@@ -57,30 +56,30 @@ function LoginForm() {
     return Object.keys(newErrors).length === 0
   }
 
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  
-  if (!validateForm()) {
-    return
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
 
-  setIsLoading(true)
+    setIsLoading(true)
 
-  try {
-    await login(formData.email, formData.password) // Теперь использует API
-    navigate('/profile')
-  } catch (error) {
-    setErrors({ submit: error.message })
-  } finally {
-    setIsLoading(false)
+    try {
+      await login(formData.email, formData.password)
+      onSuccess?.()
+      navigate(from, { replace: true })
+    } catch (error) {
+      setErrors({ submit: error.message })
+    } finally {
+      setIsLoading(false)
+    }
   }
-}
 
   const handleDemoLogin = async (role = 'freelancer') => {
     setIsLoading(true)
     
     try {
-      // Демо-аккаунты для тестирования
       const demoAccounts = {
         freelancer: {
           email: 'freelancer@demo.ru',
@@ -94,6 +93,7 @@ const handleSubmit = async (e) => {
       
       const demoAccount = demoAccounts[role]
       await login(demoAccount.email, demoAccount.password)
+      onSuccess?.()
       navigate('/profile')
       
     } catch (error) {
@@ -187,29 +187,8 @@ const handleSubmit = async (e) => {
             'Войти в аккаунт'
           )}
         </button>
-
-        {/* Демо-аккаунты для быстрого тестирования */}
-        <div className="demo-accounts">
-          <p className="demo-divider">Или войдите как:</p>
-          <div className="demo-buttons">
-            <button 
-              type="button"
-              className="demo-btn freelancer-demo"
-              onClick={() => handleDemoLogin('freelancer')}
-              disabled={isLoading}
-            >
-              👨‍💻 Демо-фрилансер
-            </button>
-            <button 
-              type="button"
-              className="demo-btn client-demo" 
-              onClick={() => handleDemoLogin('client')}
-              disabled={isLoading}
-            >
-              👔 Демо-заказчик
-            </button>
-          </div>
-        </div>
+        {/* OAuth кнопки */}
+        <OAuthButtons type="login" isLoading={isLoading} />
 
         <div className="form-footer">
           <p>

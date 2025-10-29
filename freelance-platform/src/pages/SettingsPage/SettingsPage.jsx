@@ -8,6 +8,12 @@ function SettingsPage() {
   const { user, updateUser } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
   const [saving, setSaving] = useState(false)
+  const [emailVerification, setEmailVerification] = useState({
+    code: '',
+    isVerifying: false,
+    isVerified: true, // предполагаем, что изначально email подтвержден
+    showVerificationField: false
+  })
   
   const countryInputRef = useRef(null)
   const cityInputRef = useRef(null)
@@ -69,6 +75,12 @@ function SettingsPage() {
         website: user.profile?.website || '',
         timezone: user.profile?.timezone || 'Europe/Moscow'
       })
+      
+      // Проверяем статус верификации email
+      setEmailVerification(prev => ({
+        ...prev,
+        isVerified: user.emailVerified || true
+      }))
     }
   }, [user])
 
@@ -77,9 +89,10 @@ function SettingsPage() {
     { id: 'security', name: 'Безопасность', icon: '🔐' },
     { id: 'notifications', name: 'Уведомления', icon: '🔔' },
     { id: 'appearance', name: 'Внешний вид', icon: '🎨' },
-    { id: 'payments', name: 'Платежи', icon: '💳' },
     { id: 'privacy', name: 'Конфиденциальность', icon: '🛡️' }
   ]
+
+  // Убираем вкладку платежей для всех пользователей
 
   const categories = [
     { value: '', label: 'Выберите категорию' },
@@ -155,14 +168,78 @@ function SettingsPage() {
     setShowCitySuggestions(false)
   }
 
+  // Функция для отправки кода подтверждения на email
+  const sendVerificationCode = async () => {
+    if (!profileData.email) {
+      alert('❌ Пожалуйста, введите email адрес')
+      return
+    }
+
+    setEmailVerification(prev => ({ ...prev, isVerifying: true }))
+    
+    try {
+      // Имитация отправки кода на email
+      setTimeout(() => {
+        setEmailVerification(prev => ({
+          ...prev,
+          isVerifying: false,
+          showVerificationField: true
+        }))
+        alert(`📧 Код подтверждения отправлен на ${profileData.email}`)
+      }, 2000)
+    } catch (error) {
+      alert('❌ Ошибка при отправке кода подтверждения')
+      setEmailVerification(prev => ({ ...prev, isVerifying: false }))
+    }
+  }
+
+  // Функция для проверки кода подтверждения
+  const verifyEmailCode = async () => {
+    if (!emailVerification.code) {
+      alert('❌ Пожалуйста, введите код подтверждения')
+      return
+    }
+
+    setEmailVerification(prev => ({ ...prev, isVerifying: true }))
+    
+    try {
+      // Имитация проверки кода
+      setTimeout(() => {
+        if (emailVerification.code === '123456') { // Заглушка для демонстрации
+          setEmailVerification(prev => ({
+            ...prev,
+            isVerifying: false,
+            isVerified: true,
+            showVerificationField: false
+          }))
+          alert('✅ Email успешно подтвержден!')
+        } else {
+          alert('❌ Неверный код подтверждения')
+          setEmailVerification(prev => ({ ...prev, isVerifying: false }))
+        }
+      }, 1500)
+    } catch (error) {
+      alert('❌ Ошибка при проверке кода')
+      setEmailVerification(prev => ({ ...prev, isVerifying: false }))
+    }
+  }
+
   const handleProfileSave = async (e) => {
     e.preventDefault()
+    
+    // Проверяем, изменился ли email и не подтвержден ли он
+    if (profileData.email !== user.email && !emailVerification.isVerified) {
+      alert('❌ Пожалуйста, подтвердите новый email адрес перед сохранением')
+      return
+    }
+    
     setSaving(true)
     
     try {
       const updatedUser = {
         ...user,
         email: profileData.email,
+        emailVerified: emailVerification.isVerified,
         profile: {
           ...user.profile,
           ...profileData
@@ -256,13 +333,88 @@ function SettingsPage() {
             </div>
             <div className="form-group">
               <label>Email *</label>
-              <input
-                type="email"
-                value={profileData.email}
-                onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                placeholder="your@email.com"
-                required
-              />
+              <div className="email-verification">
+                <input
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => {
+                    setProfileData({...profileData, email: e.target.value})
+                    // Сбрасываем статус верификации при изменении email
+                    if (e.target.value !== user.email) {
+                      setEmailVerification({
+                        code: '',
+                        isVerifying: false,
+                        isVerified: false,
+                        showVerificationField: false
+                      })
+                    }
+                  }}
+                  placeholder="your@email.com"
+                  required
+                />
+                {profileData.email && (
+                  <div className="verification-status">
+                    {emailVerification.isVerified ? (
+                      <span className="verified-badge">✅ Подтвержден</span>
+                    ) : (
+                      <span className="unverified-badge">❌ Не подтвержден</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Поле для ввода кода подтверждения */}
+              {emailVerification.showVerificationField && (
+                <div className="verification-code-input">
+                  <label>Код подтверждения *</label>
+                  <div className="code-input-group">
+                    <input
+                      type="text"
+                      value={emailVerification.code}
+                      onChange={(e) => setEmailVerification(prev => ({ 
+                        ...prev, 
+                        code: e.target.value 
+                      }))}
+                      placeholder="Введите код из письма"
+                      maxLength="6"
+                    />
+                    <button 
+                      type="button" 
+                      className="btn btn-outline verify-btn"
+                      onClick={verifyEmailCode}
+                      disabled={emailVerification.isVerifying}
+                    >
+                      {emailVerification.isVerifying ? (
+                        <>
+                          <div className="loading-spinner-small"></div>
+                          Проверка...
+                        </>
+                      ) : (
+                        '✅ Подтвердить'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Кнопка отправки кода */}
+              {profileData.email && profileData.email !== user.email && !emailVerification.isVerified && !emailVerification.showVerificationField && (
+                <button 
+                  type="button" 
+                  className="btn btn-outline send-code-btn"
+                  onClick={sendVerificationCode}
+                  disabled={emailVerification.isVerifying}
+                >
+                  {emailVerification.isVerifying ? (
+                    <>
+                      <div className="loading-spinner-small"></div>
+                      Отправка...
+                    </>
+                  ) : (
+                    '📧 Отправить код подтверждения'
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -355,32 +507,33 @@ function SettingsPage() {
           </div>
         </div>
 
-        <div className="form-section">
-          <h3>💼 Профессиональная информация</h3>
-          <div className="form-group">
-            <label>Специализация</label>
-            <select
-              value={profileData.category}
-              onChange={(e) => setProfileData({...profileData, category: e.target.value})}
-            >
-              {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
-          </div>
+        {/* Профессиональная информация только для фрилансеров */}
+        {user?.role === 'freelancer' && (
+          <div className="form-section">
+            <h3>💼 Профессиональная информация</h3>
+            <div className="form-group">
+              <label>Специализация</label>
+              <select
+                value={profileData.category}
+                onChange={(e) => setProfileData({...profileData, category: e.target.value})}
+              >
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="form-group">
-            <label>О себе</label>
-            <textarea
-              value={profileData.bio}
-              onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
-              placeholder="Расскажите о вашем опыте, специализации и достижениях..."
-              rows="4"
-            />
-            <div className="char-count">{profileData.bio.length}/500</div>
-          </div>
+            <div className="form-group">
+              <label>О себе</label>
+              <textarea
+                value={profileData.bio}
+                onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                placeholder="Расскажите о вашем опыте, специализации и достижениях..."
+                rows="4"
+              />
+              <div className="char-count">{profileData.bio.length}/500</div>
+            </div>
 
-          {user?.role === 'freelancer' && (
             <div className="form-group">
               <label>Почасовая ставка (₽)</label>
               <input
@@ -392,21 +545,24 @@ function SettingsPage() {
                 max="10000"
               />
             </div>
-          )}
-        </div>
-
-        <div className="form-section">
-          <h3>🔗 Ссылки и контакты</h3>
-          <div className="form-group">
-            <label>Веб-сайт / Портфолио</label>
-            <input
-              type="url"
-              value={profileData.website}
-              onChange={(e) => setProfileData({...profileData, website: e.target.value})}
-              placeholder="https://example.com"
-            />
           </div>
-        </div>
+        )}
+
+        {/* Ссылки и контакты только для фрилансеров */}
+        {user?.role === 'freelancer' && (
+          <div className="form-section">
+            <h3>🔗 Ссылки и контакты</h3>
+            <div className="form-group">
+              <label>Веб-сайт / Портфолио</label>
+              <input
+                type="url"
+                value={profileData.website}
+                onChange={(e) => setProfileData({...profileData, website: e.target.value})}
+                placeholder="https://example.com"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={saving}>
@@ -763,97 +919,7 @@ function SettingsPage() {
     </div>
   )
 
-  const renderPaymentsTab = () => (
-    <div className="settings-tab">
-      <div className="tab-header">
-        <h2>Платежные методы</h2>
-        <p>Управляйте способами получения и отправки платежей</p>
-      </div>
-
-      <div className="form-section">
-        <h3>💳 Добавить платежный метод</h3>
-        
-        <div className="payment-methods">
-          <div className="payment-method-card">
-            <div className="method-icon">💳</div>
-            <div className="method-info">
-              <h4>Банковская карта</h4>
-              <p>Visa, Mastercard, Мир</p>
-            </div>
-            <button className="btn btn-outline">Добавить</button>
-          </div>
-
-          <div className="payment-method-card">
-            <div className="method-icon">🏦</div>
-            <div className="method-info">
-              <h4>Банковский перевод</h4>
-              <p>Прямой перевод на счет</p>
-            </div>
-            <button className="btn btn-outline">Добавить</button>
-          </div>
-
-          <div className="payment-method-card">
-            <div className="method-icon">📱</div>
-            <div className="method-info">
-              <h4>Электронные кошельки</h4>
-              <p>ЮMoney, Qiwi, WebMoney</p>
-            </div>
-            <button className="btn btn-outline">Добавить</button>
-          </div>
-
-          <div className="payment-method-card">
-            <div className="method-icon">🌐</div>
-            <div className="method-info">
-              <h4>Криптовалюты</h4>
-              <p>Bitcoin, Ethereum, USDT</p>
-            </div>
-            <button className="btn btn-outline">Добавить</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3>💰 Настройки выплат</h3>
-        
-        <div className="form-group">
-          <label>Минимальная сумма для вывода (₽)</label>
-          <input
-            type="number"
-            placeholder="1000"
-            min="100"
-            max="10000"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Автоматические выплаты</label>
-          <select>
-            <option value="weekly">Еженедельно</option>
-            <option value="biweekly">Дважды в месяц</option>
-            <option value="monthly">Ежемесячно</option>
-            <option value="manual">Вручную</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3>📊 История платежей</h3>
-        <div className="empty-state">
-          <div className="empty-icon">💸</div>
-          <p>Пока нет истории платежей</p>
-          <button className="btn btn-outline" style={{marginTop: '1rem'}}>
-            📥 Экспорт данных
-          </button>
-        </div>
-      </div>
-
-      <div className="form-actions">
-        <button className="btn btn-primary">
-          💾 Сохранить настройки
-        </button>
-      </div>
-    </div>
-  )
+  // Убираем вкладку платежей полностью
 
   const renderPrivacyTab = () => (
     <div className="settings-tab">
@@ -888,16 +954,18 @@ function SettingsPage() {
             </label>
           </div>
 
-          <div className="notification-item">
-            <div className="notification-info">
-              <h4>Показывать почасовую ставку</h4>
-              <p>Отображать вашу ставку в публичном профиле</p>
+          {user?.role === 'freelancer' && (
+            <div className="notification-item">
+              <div className="notification-info">
+                <h4>Показывать почасовую ставку</h4>
+                <p>Отображать вашу ставку в публичном профиле</p>
+              </div>
+              <label className="toggle-switch">
+                <input type="checkbox" defaultChecked />
+                <span className="slider"></span>
+              </label>
             </div>
-            <label className="toggle-switch">
-              <input type="checkbox" defaultChecked />
-              <span className="slider"></span>
-            </label>
-          </div>
+          )}
         </div>
 
         <div className="form-section">
@@ -993,7 +1061,6 @@ function SettingsPage() {
           {activeTab === 'security' && renderSecurityTab()}
           {activeTab === 'notifications' && renderNotificationsTab()}
           {activeTab === 'appearance' && renderAppearanceTab()}
-          {activeTab === 'payments' && renderPaymentsTab()}
           {activeTab === 'privacy' && renderPrivacyTab()}
         </div>
       </div>

@@ -5,7 +5,7 @@ function AboutPage() {
     <div className="about-page">
       <div className="page-header">
         <h1 className="page-title">
-          О <span className="title-accent">проекте</span>
+           <span className="title-accent">О проекте</span>
         </h1>
         <p className="page-subtitle">Узнайте больше о нашей платформе</p>
       </div>

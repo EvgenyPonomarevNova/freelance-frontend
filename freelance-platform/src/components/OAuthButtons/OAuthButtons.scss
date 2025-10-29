@@ -1,0 +1,81 @@
+// src/components/OAuthButtons/OAuthButtons.scss
+.oauth-buttons {
+  margin: 1.5rem 0;
+
+  .oauth-divider {
+    text-align: center;
+    position: relative;
+    margin: 1.5rem 0;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e1e5e9;
+    }
+
+    span {
+      background: white;
+      padding: 0 1rem;
+      color: #6c757d;
+      font-size: 0.875rem;
+      position: relative;
+    }
+  }
+
+  .oauth-providers {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+    }
+  }
+
+  .oauth-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--brand-color);
+    background: white;
+    color: var(--brand-color);
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(.disabled) {
+      background: var(--brand-color);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .oauth-icon {
+      font-size: 1.1rem;
+    }
+
+    .oauth-text {
+      font-size: 0.9rem;
+    }
+  }
+
+  .oauth-note {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+  }
+}
