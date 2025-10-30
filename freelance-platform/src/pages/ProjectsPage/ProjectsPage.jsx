@@ -24,24 +24,22 @@ function ProjectsPage() {
     loadProjects()
   }, [])
 
-  const loadProjects = async () => {
-    try {
-      setLoading(true)
-      console.log('Loading projects from real API...')
-      
-      const response = await apiService.getProjects()
-      console.log('Projects from API:', response.projects)
-      
-      setProjects(response.projects || [])
-    } catch (error) {
-      console.error('Failed to load projects from API:', error)
-      // Если API не работает, покажем пустой список
-      setProjects([])
-    } finally {
-      setLoading(false)
+const loadProjects = async () => {
+  try {
+    const response = await apiService.getProjects();
+    const projects = response.projects || [];
+    
+    if (projects.length === 0) {
+      // Загрузить демо-данные или показать сообщение
+      loadDemoProjects();
+    } else {
+      setProjects(projects);
     }
+  } catch (error) {
+    console.error('Failed to load projects:', error);
+    loadProjectsFromStorage(); // Резервный вариант
   }
-
+};
   // Фильтрация и сортировка (обновим для работы с реальными данными)
   const filteredAndSortedProjects = useMemo(() => {
     let filtered = projects.filter(project => {

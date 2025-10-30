@@ -5,8 +5,31 @@ import { useUser } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import SkillTag from "../../components/SkillTag/SkillTag";
 import PortfolioItem from "../../components/PortfolioItem/PortfolioItem";
+import LoadingSpinner from "../../components/UI/LoadingSpinner";
+import EmptyState from "../../components/UI/EmptyState";
+
+// Константы для унификации структуры данных
+const PROFILE_DATA_SCHEMA = {
+  name: "",
+  title: "",
+  bio: "",
+  hourlyRate: "",
+  location: "",
+  experience: "",
+  website: "",
+  telegram: "",
+  github: "",
+};
+
+const SKILL_LEVELS = [
+  { value: "beginner", label: "Начальный" },
+  { value: "intermediate", label: "Средний" },
+  { value: "advanced", label: "Продвинутый" },
+  { value: "expert", label: "Эксперт" }
+];
 
 function ProfilePage() {
+  // Хуки должны быть на верхнем уровне функции компонента
   const {
     user,
     loading,
@@ -23,23 +46,13 @@ function ProfilePage() {
 
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  
+  // Состояния компонента
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("skills");
   const [stats, setStats] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-
-  const [profileData, setProfileData] = useState({
-    name: "",
-    title: "",
-    description: "",
-    hourlyRate: "",
-    location: "",
-    experience: "",
-    website: "",
-    telegram: "",
-    github: "",
-  });
-
+  const [profileData, setProfileData] = useState(PROFILE_DATA_SCHEMA);
   const [newSkill, setNewSkill] = useState("");
   const [skillLevel, setSkillLevel] = useState("intermediate");
   const [newPortfolioItem, setNewPortfolioItem] = useState({
@@ -49,18 +62,17 @@ function ProfilePage() {
     link: "",
     image: "",
   });
-
   const [newExperience, setNewExperience] = useState({
     position: "",
     company: "",
     period: "",
     description: "",
   });
-
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [showExperienceForm, setShowExperienceForm] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
-  // Загрузка статистики
+  // Загрузка статистики пользователя
   useEffect(() => {
     const loadStats = async () => {
       if (user) {
@@ -78,107 +90,84 @@ function ProfilePage() {
 
   // Инициализация данных профиля
   useEffect(() => {
-    if (user?.profile) {
-      setProfileData({
-        name: user.profile.name || "",
-        title: user.profile.title || "",
-        description: user.profile.bio || "", // ← ИЗМЕНИЛИ НА bio
-        hourlyRate: user.profile.hourlyRate || "",
-        location: user.profile.location || "",
-        experience: user.profile.experience || "",
-        website: user.profile.website || "",
-        telegram: user.profile.telegram || "",
-        github: user.profile.github || "",
-      });
+    if (user) {
+      console.log('👤 Current user data:', user);
+      console.log('👤 User profile data:', user.profile);
+
+      const userData = {
+        name: user.profile?.name || user.name || "",
+        title: user.profile?.title || "",
+        bio: user.profile?.bio || "",
+        hourlyRate: user.profile?.hourlyRate || "",
+        location: user.profile?.location || "",
+        experience: user.profile?.experience || "",
+        website: user.profile?.website || "",
+        telegram: user.profile?.telegram || "",
+        github: user.profile?.github || "",
+      };
+
+      console.log('📝 Initializing profile data:', userData);
+      setProfileData(userData);
+
+      if (user.profile?.avatar) {
+        console.log('🖼️ Setting avatar from user profile:', user.profile.avatar);
+        setAvatarPreview(user.profile.avatar);
+      } else {
+        setAvatarPreview(null);
+      }
     }
   }, [user]);
 
-useEffect(() => {
-  if (user) {
-    console.log('👤 Current user data:', user);
-    console.log('👤 User profile data:', user.profile);
+  // Обработчики событий
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    const userData = {
-      name: user.profile?.name || user.name || "",
-      title: user.profile?.title || user.title || "",
-      description: user.profile?.bio || user.bio || "",
-      hourlyRate: user.profile?.hourlyRate || user.hourlyRate || "",
-      location: user.profile?.location || user.location || "",
-      experience: user.profile?.experience || user.experience || "",
-      website: user.profile?.website || user.website || "",
-      telegram: user.profile?.telegram || user.telegram || "",
-      github: user.profile?.github || user.github || "",
-    };
+    try {
+      if (!file.type.startsWith("image/")) {
+        alert("Пожалуйста, выберите изображение");
+        return;
+      }
 
-    console.log('📝 Initializing profile data:', userData);
-    setProfileData(userData);
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Размер файла не должен превышать 5MB");
+        return;
+      }
 
-    // 🔥 ВАЖНО: Всегда инициализируем avatarPreview из данных пользователя
-    if (user.profile?.avatar) {
-      console.log('🖼️ Setting avatar from user profile:', user.profile.avatar);
-      setAvatarPreview(user.profile.avatar);
-    } else {
-      setAvatarPreview(null);
-    }
-  }
-}, [user]);
-  // Функции
-const handleAvatarUpload = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  try {
-    // Валидация файла
-    if (!file.type.startsWith("image/")) {
-      alert("Пожалуйста, выберите изображение");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Размер файла не должен превышать 5MB");
-      return;
-    }
-
-    // Чтение файла и конвертация в base64
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const imageUrl = e.target.result;
-        
-        // Сразу показываем превью
-        setAvatarPreview(imageUrl);
-        
-        // Сохраняем на сервер
-        console.log('📤 Uploading avatar to server...');
-        const result = await updateProfile({ avatar: imageUrl });
-        
-        if (result?.success) {
-          console.log('✅ Avatar saved successfully');
-          // Превью уже установлено, данные в localStorage обновятся автоматически через updateProfile
-        } else {
-          console.error('❌ Failed to save avatar');
-          alert('Ошибка при сохранении фото');
-          // Откатываем превью в случае ошибки
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const imageUrl = e.target.result;
+          setAvatarPreview(imageUrl);
+          
+          console.log('📤 Uploading avatar to server...');
+          const result = await updateProfile({ avatar: imageUrl });
+          
+          if (result?.success) {
+            console.log('✅ Avatar saved successfully');
+          } else {
+            console.error('❌ Failed to save avatar');
+            alert('Ошибка при сохранении фото');
+            setAvatarPreview(user.profile?.avatar || null);
+          }
+        } catch (error) {
+          console.error('❌ Avatar upload error:', error);
+          alert('Ошибка при загрузке фото');
           setAvatarPreview(user.profile?.avatar || null);
         }
-      } catch (error) {
-        console.error('❌ Avatar upload error:', error);
-        alert('Ошибка при загрузке фото');
-        setAvatarPreview(user.profile?.avatar || null);
-      }
-    };
-    
-    reader.onerror = () => {
-      alert('Ошибка при чтении файла');
-    };
-    
-    reader.readAsDataURL(file);
-    
-  } catch (error) {
-    console.error('❌ File processing error:', error);
-    alert('Ошибка при обработке файла');
-  }
-};
+      };
+      
+      reader.onerror = () => {
+        alert('Ошибка при чтении файла');
+      };
+      
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('❌ File processing error:', error);
+      alert('Ошибка при обработке файла');
+    }
+  };
 
   const triggerAvatarUpload = () => {
     fileInputRef.current?.click();
@@ -192,67 +181,64 @@ const handleAvatarUpload = async (event) => {
     }));
   };
 
-const saveProfile = async () => {
-  try {
-    const dataToSave = {
-      name: profileData.name,
-      bio: profileData.description,
-      location: profileData.location,
-      title: profileData.title,
-      hourlyRate: profileData.hourlyRate,
-      experience: profileData.experience,
-      website: profileData.website,
-      telegram: profileData.telegram,
-      github: profileData.github,
-    };
+  const saveProfile = async () => {
+    try {
+      setSaveLoading(true);
+      
+      const dataToSave = {
+        name: profileData.name,
+        bio: profileData.bio,
+        location: profileData.location,
+        title: profileData.title,
+        hourlyRate: profileData.hourlyRate,
+        experience: profileData.experience,
+        website: profileData.website,
+        telegram: profileData.telegram,
+        github: profileData.github,
+      };
 
-    console.log('📤 Saving profile data:', dataToSave);
-    
-    const result = await updateProfile(dataToSave);
-    console.log('✅ Final save result:', result);
+      console.log('📤 Saving profile data:', dataToSave);
+      
+      const result = await updateProfile(dataToSave);
+      console.log('✅ Final save result:', result);
 
-    // Всегда закрываем редактирование и показываем успех
+      setIsEditing(false);
+      
+      const savedUser = localStorage.getItem('current_user');
+      console.log('💾 Current localStorage:', JSON.parse(savedUser));
+      
+      alert('Профиль успешно обновлен!');
+      
+      const updatedStats = await getUserStats();
+      setStats(updatedStats);
+
+    } catch (error) {
+      console.error('❌ Save error:', error);
+      alert('Ошибка при сохранении профиля: ' + error.message);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    if (user) {
+      setProfileData({
+        name: user.name || user.profile?.name || "",
+        title: user.title || user.profile?.title || "",
+        bio: user.bio || user.profile?.bio || "",
+        hourlyRate: user.hourlyRate || user.profile?.hourlyRate || "",
+        location: user.location || user.profile?.location || "",
+        experience: user.experience || user.profile?.experience || "",
+        website: user.website || user.profile?.website || "",
+        telegram: user.telegram || user.profile?.telegram || "",
+        github: user.github || user.profile?.github || "",
+      });
+    }
     setIsEditing(false);
-    
-    // Проверяем localStorage сразу после сохранения
-    const savedUser = localStorage.getItem('current_user');
-    console.log('💾 Current localStorage:', JSON.parse(savedUser));
-    
-    alert('Профиль успешно обновлен!');
-    
-    // Обновляем статистику
-    const updatedStats = await getUserStats();
-    setStats(updatedStats);
-
-  } catch (error) {
-    console.error('❌ Save error:', error);
-    alert('Ошибка при сохранении профиля: ' + error.message);
-  }
-};
-
-const cancelEdit = () => {
-  if (user) {
-    // Используем данные из текущего пользователя
-    setProfileData({
-      name: user.name || user.profile?.name || "",
-      title: user.title || user.profile?.title || "",
-      description: user.bio || user.profile?.bio || "", // bio → description
-      hourlyRate: user.hourlyRate || user.profile?.hourlyRate || "",
-      location: user.location || user.profile?.location || "",
-      experience: user.experience || user.profile?.experience || "",
-      website: user.website || user.profile?.website || "",
-      telegram: user.telegram || user.profile?.telegram || "",
-      github: user.github || user.profile?.github || "",
-    });
-  }
-  setIsEditing(false);
-};
+  };
 
   const addNewSkill = () => {
-    if (
-      newSkill.trim() &&
-      !user.profile.skills?.find((s) => s.skill === newSkill.trim())
-    ) {
+    if (newSkill.trim() && !user.profile.skills?.find((s) => s.skill === newSkill.trim())) {
       addSkill(newSkill.trim(), skillLevel);
       setNewSkill("");
     }
@@ -305,14 +291,22 @@ const cancelEdit = () => {
     navigate("/my-projects");
   };
 
+  // Вспомогательные функции
+  const getStatusConfig = (status) => {
+    const configs = {
+      open: { text: '🔓 Открыт', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)' },
+      in_progress: { text: '⚡ В работе', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
+      completed: { text: '✅ Завершен', color: '#6b7280', bgColor: 'rgba(107, 114, 128, 0.1)' },
+      cancelled: { text: '❌ Отменен', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' }
+    };
+    return configs[status] || configs.open;
+  };
+
   // Показываем загрузку
   if (loading) {
     return (
       <div className="profile-page">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Загрузка профиля...</p>
-        </div>
+        <LoadingSpinner message="Загрузка профиля..." />
       </div>
     );
   }
@@ -320,13 +314,16 @@ const cancelEdit = () => {
   if (!user) {
     return (
       <div className="profile-page">
-        <div className="not-logged-in">
-          <h2>Пожалуйста, войдите в систему</h2>
-          <p>Чтобы просмотреть профиль, необходимо авторизоваться</p>
-          <button className="auth-btn" onClick={() => navigate("/login")}>
-            Войти
-          </button>
-        </div>
+        <EmptyState 
+          icon="🔒"
+          title="Требуется авторизация"
+          description="Войдите в систему для просмотра профиля"
+          action={
+            <button className="btn btn-primary" onClick={() => navigate("/login")}>
+              Войти в систему
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -337,38 +334,38 @@ const cancelEdit = () => {
       <div className="profile-page">
         <div className="client-profile">
           <div className="profile-header">
-<div className="profile-avatar-section">
-  <div
-    className="profile-avatar"
-    onClick={triggerAvatarUpload}
-    style={{ cursor: "pointer" }} // Всегда кликабельно
-  >
-    {avatarPreview ? (
-      <img src={avatarPreview} alt={user.profile.name} />
-    ) : (
-      <div className="avatar-placeholder">
-        {user.profile.name
-          ?.split(" ")
-          .map((n) => n[0])
-          .join("") || "П"}
-      </div>
-    )}
-    <div className="avatar-overlay">
-      <span>📷</span>
-      <p>Сменить фото</p>
-    </div>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleAvatarUpload}
-      accept="image/*"
-      style={{ display: "none" }}
-    />
-  </div>
-  <div className="verification-badge">
-    <span className="badge">✅ Проверен</span>
-  </div>
-</div>
+            <div className="profile-avatar-section">
+              <div
+                className="profile-avatar"
+                onClick={triggerAvatarUpload}
+                style={{ cursor: "pointer" }}
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt={user.profile.name} />
+                ) : (
+                  <div className="avatar-placeholder">
+                    {user.profile.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("") || "П"}
+                  </div>
+                )}
+                <div className="avatar-overlay">
+                  <span>📷</span>
+                  <p>Сменить фото</p>
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  style={{ display: "none" }}
+                />
+              </div>
+              <div className="verification-badge">
+                <span className="badge">✅ Проверен</span>
+              </div>
+            </div>
             <div className="profile-main-info">
               <div className="name-section">
                 <h1 className="profile-name">
@@ -422,16 +419,20 @@ const cancelEdit = () => {
                 <div className="form-group">
                   <label>О себе *</label>
                   <textarea
-                    name="description"
-                    value={profileData.description}
+                    name="bio"
+                    value={profileData.bio}
                     onChange={handleProfileChange}
                     placeholder="Расскажите о себе..."
                     rows="4"
                   />
                 </div>
                 <div className="modal-actions">
-                  <button className="save-btn" onClick={saveProfile}>
-                    Сохранить
+                  <button 
+                    className="save-btn" 
+                    onClick={saveProfile}
+                    disabled={saveLoading}
+                  >
+                    {saveLoading ? "Сохранение..." : "Сохранить"}
                   </button>
                   <button className="cancel-btn" onClick={cancelEdit}>
                     Отмена
@@ -507,40 +508,40 @@ const cancelEdit = () => {
   return (
     <div className="profile-page">
       <div className="profile-header">
-<div className="profile-avatar-section">
-  <div
-    className="profile-avatar"
-    onClick={triggerAvatarUpload}
-    style={{ cursor: "pointer" }} // Всегда кликабельно
-  >
-    {avatarPreview ? (
-      <img src={avatarPreview} alt={user.profile.name} />
-    ) : user.profile.avatar ? (
-      <img src={user.profile.avatar} alt={user.profile.name} />
-    ) : (
-      <div className="avatar-placeholder">
-        {user.profile.name
-          ?.split(" ")
-          .map((n) => n[0])
-          .join("") || "П"}
-      </div>
-    )}
-    <div className="avatar-overlay">
-      <span>📷</span>
-      <p>Сменить фото</p>
-    </div>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleAvatarUpload}
-      accept="image/*"
-      style={{ display: "none" }}
-    />
-  </div>
-  <div className="verification-badge">
-    <span className="badge">✅ Проверен</span>
-  </div>
-</div>
+        <div className="profile-avatar-section">
+          <div
+            className="profile-avatar"
+            onClick={triggerAvatarUpload}
+            style={{ cursor: "pointer" }}
+          >
+            {avatarPreview ? (
+              <img src={avatarPreview} alt={user.profile.name} />
+            ) : user.profile.avatar ? (
+              <img src={user.profile.avatar} alt={user.profile.name} />
+            ) : (
+              <div className="avatar-placeholder">
+                {user.profile.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("") || "П"}
+              </div>
+            )}
+            <div className="avatar-overlay">
+              <span>📷</span>
+              <p>Сменить фото</p>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarUpload}
+              accept="image/*"
+              style={{ display: "none" }}
+            />
+          </div>
+          <div className="verification-badge">
+            <span className="badge">✅ Проверен</span>
+          </div>
+        </div>
 
         <div className="profile-main-info">
           {isEditing ? (
@@ -562,8 +563,8 @@ const cancelEdit = () => {
                 className="edit-input"
               />
               <textarea
-                name="description"
-                value={profileData.description}
+                name="bio"
+                value={profileData.bio}
                 onChange={handleProfileChange}
                 placeholder="Расскажите о себе..."
                 className="edit-textarea"
@@ -723,8 +724,19 @@ const cancelEdit = () => {
         <div className="profile-actions">
           {isEditing ? (
             <div className="edit-actions">
-              <button className="save-btn" onClick={saveProfile}>
-                💾 Сохранить
+              <button 
+                className="save-btn" 
+                onClick={saveProfile}
+                disabled={saveLoading}
+              >
+                {saveLoading ? (
+                  <>
+                    <div className="loading-spinner-small"></div>
+                    Сохранение...
+                  </>
+                ) : (
+                  '💾 Сохранить'
+                )}
               </button>
               <button className="cancel-btn" onClick={cancelEdit}>
                 ❌ Отмена
@@ -788,10 +800,11 @@ const cancelEdit = () => {
                     onChange={(e) => setSkillLevel(e.target.value)}
                     className="level-select"
                   >
-                    <option value="beginner">Начальный</option>
-                    <option value="intermediate">Средний</option>
-                    <option value="advanced">Продвинутый</option>
-                    <option value="expert">Эксперт</option>
+                    {SKILL_LEVELS.map(level => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
                   </select>
                   <button onClick={addNewSkill} className="add-skill-btn">
                     +
@@ -812,15 +825,11 @@ const cancelEdit = () => {
                   />
                 ))
               ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">🎯</div>
-                  <p>Навыки еще не добавлены</p>
-                  {isEditing && (
-                    <p className="empty-hint">
-                      Добавьте свои первые навыки выше
-                    </p>
-                  )}
-                </div>
+                <EmptyState
+                  icon="🎯"
+                  title="Навыки еще не добавлены"
+                  description={isEditing ? "Добавьте свои первые навыки выше" : "Навыки пока не добавлены в профиль"}
+                />
               )}
             </div>
           </section>
@@ -925,15 +934,11 @@ const cancelEdit = () => {
                   />
                 ))
               ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">💼</div>
-                  <p>Проекты в портфолио еще не добавлены</p>
-                  {isEditing && (
-                    <p className="empty-hint">
-                      Начните с добавления первого проекта
-                    </p>
-                  )}
-                </div>
+                <EmptyState
+                  icon="💼"
+                  title="Проекты в портфолио еще не добавлены"
+                  description={isEditing ? "Начните с добавления первого проекта" : "Портфолио пока пустое"}
+                />
               )}
             </div>
           </section>
@@ -1047,15 +1052,11 @@ const cancelEdit = () => {
                   </div>
                 ))
               ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">📈</div>
-                  <p>Информация об опыте работы пока не добавлена</p>
-                  {isEditing && (
-                    <p className="empty-hint">
-                      Добавьте свой первый опыт работы
-                    </p>
-                  )}
-                </div>
+                <EmptyState
+                  icon="📈"
+                  title="Информация об опыте работы пока не добавлена"
+                  description={isEditing ? "Добавьте свой первый опыт работы" : "Опыт работы пока не указан"}
+                />
               )}
             </div>
           </section>
@@ -1081,16 +1082,19 @@ const cancelEdit = () => {
               </div>
             </div>
             <div className="responses-list">
-              <div className="empty-state">
-                <div className="empty-icon">📥</div>
-                <p>У вас пока нет откликов на проекты</p>
-                <button
-                  className="action-btn primary"
-                  onClick={() => navigate("/projects")}
-                >
-                  Найти проекты
-                </button>
-              </div>
+              <EmptyState
+                icon="📥"
+                title="У вас пока нет откликов на проекты"
+                description="Начните искать интересные проекты и отправляйте отклики"
+                action={
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => navigate("/projects")}
+                  >
+                    Найти проекты
+                  </button>
+                }
+              />
             </div>
           </section>
         )}

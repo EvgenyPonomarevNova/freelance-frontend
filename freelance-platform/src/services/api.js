@@ -2,16 +2,11 @@
 class ApiService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
-    this.isMockMode = !import.meta.env.VITE_API_URL;
+    this.isMockMode = true; // Флаг для демо-режима
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
-    // Для демо-режима возвращаем mock данные
-    if (this.isMockMode && this.shouldMock(endpoint)) {
-      return this.mockResponse(endpoint, options);
-    }
 
     const config = {
       headers: {
@@ -21,7 +16,6 @@ class ApiService {
       ...options,
     };
 
-    // Добавляем токен авторизации
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -35,22 +29,18 @@ class ApiService {
       const response = await fetch(url, config);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("current_user");
-        }
-        
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       return await response.json();
+
     } catch (error) {
-      console.error("API request failed:", error);
+      console.error('API request failed:', error);
       
-      // В демо-режиме возвращаем mock данные при ошибке
+      // В демо-режиме возвращаем mock данные
       if (this.isMockMode) {
-        return this.mockResponse(endpoint, options);
+        console.log('🔄 Using mock data for:', endpoint);
+        return this.getMockResponse(endpoint, options);
       }
       
       throw error;
@@ -58,100 +48,65 @@ class ApiService {
   }
 
   // Mock responses для демо-режима
-  shouldMock(endpoint) {
-    const mockEndpoints = [
-      '/auth/oauth',
-      '/auth/oauth/link',
-      '/auth/oauth/unlink'
-    ];
-    return mockEndpoints.some(mockEndpoint => endpoint.includes(mockEndpoint));
-  }
-
-  mockResponse(endpoint, options) {
-    console.log('📱 Using mock response for:', endpoint);
-    
-    // OAuth авторизация
-    if (endpoint.includes('/auth/oauth/login')) {
-      const provider = endpoint.split('/').pop() || 'google';
-      return this.mockOAuthLogin(provider, options.body);
-    }
-    
-    // Связывание OAuth
-    if (endpoint.includes('/auth/oauth/link')) {
-      return { success: true, message: 'OAuth account linked successfully' };
-    }
-    
-    // Отвязывание OAuth
-    if (endpoint.includes('/auth/oauth/unlink')) {
-      return { success: true, message: 'OAuth account unlinked successfully' };
-    }
-    
-    return { success: true, message: 'Mock response' };
-  }
-
-  mockOAuthLogin(provider, body) {
-    const demoUsers = {
-      google: {
-        id: 1001,
-        email: 'demo.google@freelancehub.ru',
-        fullName: 'Демо Google Пользователь',
-        role: 'freelancer',
-        profile: {
-          avatar: null,
-          bio: `Пользователь авторизованный через Google`,
-          skills: ['JavaScript', 'React', 'TypeScript'],
-          rating: 4.9,
-          completedProjects: 15,
-          isEmailVerified: true,
-          oauthProvider: 'google'
+  getMockResponse(endpoint, options) {
+    const mockData = {
+      '/auth/login': {
+        success: true,
+        token: 'demo_jwt_token_' + Date.now(),
+        user: {
+          id: Date.now(),
+          email: options.body?.email || 'demo@user.ru',
+          role: 'freelancer',
+          profile: {
+            name: 'Демо Пользователь',
+            bio: 'Демо-пользователь для тестирования',
+            skills: ['JavaScript', 'React', 'CSS'],
+            rating: 4.8,
+            completedProjects: 12,
+            hourlyRate: 1500,
+            location: 'Москва'
+          }
         }
       },
-      yandex: {
-        id: 1002,
-        email: 'demo.yandex@freelancehub.ru',
-        fullName: 'Демо Yandex Пользователь', 
-        role: 'freelancer',
-        profile: {
-          avatar: null,
-          bio: `Пользователь авторизованный через Yandex`,
-          skills: ['Python', 'Django', 'PostgreSQL'],
-          rating: 4.7,
-          completedProjects: 8,
-          isEmailVerified: true,
-          oauthProvider: 'yandex'
+      '/auth/register': {
+        success: true,
+        token: 'demo_jwt_token_' + Date.now(),
+        user: {
+          id: Date.now(),
+          email: options.body?.email || 'newuser@demo.ru',
+          role: options.body?.role || 'freelancer',
+          profile: {
+            name: options.body?.name || 'Новый Пользователь',
+            bio: '',
+            skills: [],
+            rating: 5.0,
+            completedProjects: 0
+          }
         }
       },
-      vk: {
-        id: 1003,
-        email: 'demo.vk@freelancehub.ru',
-        fullName: 'Демо VK Пользователь',
-        role: 'client',
-        profile: {
-          avatar: null,
-          bio: `Заказчик авторизованный через VK`,
-          skills: [],
-          rating: 5.0,
-          completedProjects: 0,
-          isEmailVerified: true,
-          oauthProvider: 'vk'
-        }
+      '/auth/me': {
+        user: JSON.parse(localStorage.getItem('current_user') || '{}')
+      },
+      '/projects': {
+        projects: JSON.parse(localStorage.getItem('nexus_projects') || '[]')
+      },
+      '/users/profile': {
+        status: 'success',
+        user: JSON.parse(localStorage.getItem('current_user') || '{}')
       }
     };
 
-    const user = demoUsers[provider] || demoUsers.google;
-    const token = `demo_oauth_token_${provider}_${Date.now()}`;
-
-    return {
-      success: true,
-      user,
-      token,
-      isDemo: true
-    };
+    return mockData[endpoint] || { success: true, message: 'Mock response' };
   }
 
   // OAuth методы
   async oauthLogin(provider, code) {
     try {
+      // Для демо-режима используем mock
+      if (this.isMockMode || !code || code.startsWith('demo')) {
+        return this.mockOAuthLogin(provider);
+      }
+
       const response = await this.request(`/auth/oauth/${provider}/login`, {
         method: "POST",
         body: {
@@ -170,34 +125,98 @@ class ApiService {
     } catch (error) {
       console.error('OAuth login error:', error);
       
-      // В демо-режиме используем mock
-      if (this.isMockMode) {
-        const mockResponse = this.mockOAuthLogin(provider, { code });
-        localStorage.setItem("token", mockResponse.token);
-        localStorage.setItem("current_user", JSON.stringify(mockResponse.user));
-        return mockResponse;
-      }
-      
-      throw error;
+      // Fallback на mock в случае ошибки
+      const mockResponse = this.mockOAuthLogin(provider);
+      localStorage.setItem("token", mockResponse.token);
+      localStorage.setItem("current_user", JSON.stringify(mockResponse.user));
+      return mockResponse;
     }
+  }
+
+  // Mock OAuth логин
+  mockOAuthLogin(provider) {
+    const demoUsers = {
+      google: {
+        email: 'demo.google@freelancehub.ru',
+        name: 'Демо Google Пользователь',
+        role: 'freelancer'
+      },
+      yandex: {
+        email: 'demo.yandex@freelancehub.ru', 
+        name: 'Демо Yandex Пользователь',
+        role: 'freelancer'
+      },
+      vk: {
+        email: 'demo.vk@freelancehub.ru',
+        name: 'Демо VK Пользователь',
+        role: 'client'
+      }
+    };
+
+    const demoUser = demoUsers[provider] || demoUsers.google;
+    
+    const mockUser = {
+      id: Date.now(),
+      email: demoUser.email,
+      fullName: demoUser.name,
+      role: demoUser.role,
+      profile: {
+        name: demoUser.name,
+        bio: `Демо пользователь через ${provider}`,
+        skills: demoUser.role === 'freelancer' ? ['JavaScript', 'React', 'CSS'] : [],
+        rating: 4.8,
+        completedProjects: demoUser.role === 'freelancer' ? 12 : 0,
+        isEmailVerified: true,
+        oauthProvider: provider
+      },
+      isOAuth: true,
+      isDemo: true
+    };
+
+    const mockToken = `demo_oauth_token_${provider}_${Date.now()}`;
+
+    return {
+      success: true,
+      user: mockUser,
+      token: mockToken,
+      isDemo: true
+    };
   }
 
   // Связывание OAuth с аккаунтом
   async linkOAuthAccount(provider, code) {
-    return this.request(`/auth/oauth/${provider}/link`, {
-      method: "POST",
-      body: {
-        code,
-        redirect_uri: `${window.location.origin}/oauth-callback`
+    try {
+      if (this.isMockMode) {
+        return { success: true, message: 'OAuth account linked successfully' };
       }
-    });
+
+      return await this.request(`/auth/oauth/${provider}/link`, {
+        method: "POST",
+        body: {
+          code,
+          redirect_uri: `${window.location.origin}/oauth-callback`
+        }
+      });
+    } catch (error) {
+      console.error('Link OAuth error:', error);
+      return { success: true }; // Всегда успех в демо-режиме
+    }
   }
 
   // Отвязывание OAuth аккаунта
   async unlinkOAuthAccount(provider) {
-    return this.request(`/auth/oauth/${provider}/unlink`, {
-      method: "DELETE"
-    });
+    try {
+      if (this.isMockMode) {
+        return { success: true, message: 'OAuth account unlinked successfully' };
+      }
+
+      return await this.request(`/auth/oauth/${provider}/unlink`, {
+        method: "DELETE"
+      });
+    } catch (error) {
+      console.error('Unlink OAuth error:', error);
+      return { success: true }; // Всегда успех в демо-режиме
+    }
   }
 
   // Получение OAuth URL (для фронтенда)
@@ -209,7 +228,7 @@ class ApiService {
         scope: 'email profile'
       },
       yandex: {
-        clientId: import.meta.env.VITE_YANDEX_CLIENT_ID || 'demo-yandex-client-id', 
+        clientId: import.meta.env.VITE_YANDEX_CLIENT_ID || 'demo-yandex-client-id',
         authUrl: 'https://oauth.yandex.ru/authorize',
         scope: 'login:email login:info'
       },
@@ -238,33 +257,50 @@ class ApiService {
     return `${providerConfig.authUrl}?${params.toString()}`;
   }
 
-  // Существующие методы остаются без изменений
+  // Методы аутентификации
   async login(email, password) {
-    const response = await this.request("/auth/login", {
-      method: "POST",
-      body: { email, password },
-    });
+    try {
+      console.log('🔐 Attempting login for:', email);
+      
+      const response = await this.request("/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
 
-    if (response.token) {
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("current_user", JSON.stringify(response.user));
+      console.log('📨 Login API response:', response);
+
+      if (response && response.success && response.token) {
+        console.log('✅ Login successful, saving token');
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+        return response;
+      }
+      
+      throw new Error(response?.error || "Invalid response from server");
+      
+    } catch (error) {
+      console.error('❌ Login API error:', error.message);
+      throw error;
     }
-
-    return response;
   }
 
   async register(userData) {
-    const response = await this.request("/auth/register", {
-      method: "POST",
-      body: userData,
-    });
+    try {
+      const response = await this.request("/auth/register", {
+        method: "POST",
+        body: userData,
+      });
 
-    if (response.token) {
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("current_user", JSON.stringify(response.user));
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
     }
-
-    return response;
   }
 
   async getCurrentUser() {
@@ -287,77 +323,137 @@ class ApiService {
 
   // Project methods
   async getProjects(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString();
-    return this.request(`/projects?${queryParams}`);
+    try {
+      const queryParams = new URLSearchParams(filters).toString();
+      return await this.request(`/projects?${queryParams}`);
+    } catch (error) {
+      console.error('Get projects error:', error);
+      throw error;
+    }
   }
 
   async createProject(projectData) {
-    return this.request("/projects", {
-      method: "POST",
-      body: projectData,
-    });
+    try {
+      return await this.request("/projects", {
+        method: "POST",
+        body: projectData,
+      });
+    } catch (error) {
+      console.error('Create project error:', error);
+      throw error;
+    }
   }
 
   async getProject(projectId) {
-    return this.request(`/projects/${projectId}`);
+    try {
+      return await this.request(`/projects/${projectId}`);
+    } catch (error) {
+      console.error('Get project error:', error);
+      throw error;
+    }
   }
 
   async respondToProject(projectId, responseData) {
-    return this.request(`/projects/${projectId}/respond`, {
-      method: "POST",
-      body: responseData,
-    });
+    try {
+      return await this.request(`/projects/${projectId}/respond`, {
+        method: "POST",
+        body: responseData,
+      });
+    } catch (error) {
+      console.error('Respond to project error:', error);
+      throw error;
+    }
   }
 
   async getMyResponses() {
-    return this.request("/projects/my/responses");
+    try {
+      return await this.request("/projects/my/responses");
+    } catch (error) {
+      console.error('Get my responses error:', error);
+      throw error;
+    }
   }
 
   async getMyProjects() {
-    return this.request("/projects/client/my-projects");
+    try {
+      return await this.request("/projects/client/my-projects");
+    } catch (error) {
+      console.error('Get my projects error:', error);
+      throw error;
+    }
   }
 
   async updateResponseStatus(projectId, responseId, status) {
-    return this.request(`/projects/${projectId}/responses/${responseId}`, {
-      method: "PATCH",
-      body: { status },
-    });
+    try {
+      return await this.request(`/projects/${projectId}/responses/${responseId}`, {
+        method: "PATCH",
+        body: { status },
+      });
+    } catch (error) {
+      console.error('Update response status error:', error);
+      throw error;
+    }
   }
 
   // User methods
   async getFreelancers(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString();
-    return this.request(`/users/freelancers?${queryParams}`);
+    try {
+      const queryParams = new URLSearchParams(filters).toString();
+      return await this.request(`/users/freelancers?${queryParams}`);
+    } catch (error) {
+      console.error('Get freelancers error:', error);
+      throw error;
+    }
   }
 
   async getUserProfile(userId) {
-    return this.request(`/users/${userId}`);
+    try {
+      return await this.request(`/users/${userId}`);
+    } catch (error) {
+      console.error('Get user profile error:', error);
+      throw error;
+    }
   }
 
   async updateProfile(profileData) {
-    const response = await this.request("/users/profile", {
-      method: "PATCH",
-      body: profileData,
-    });
+    try {
+      const response = await this.request("/users/profile", {
+        method: "PATCH",
+        body: profileData,
+      });
 
-    // Обновляем пользователя в localStorage
-    if (response.user) {
-      localStorage.setItem("current_user", JSON.stringify(response.user));
+      // Обновляем пользователя в localStorage
+      if (response.user) {
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
     }
-
-    return response;
   }
 
   // Chat methods
   async sendMessage(messageData) {
-    return this.request("/chat/message", {
-      method: "POST",
-      body: messageData,
-    });
+    try {
+      return await this.request("/chat/message", {
+        method: "POST",
+        body: messageData,
+      });
+    } catch (error) {
+      console.error('Send message error:', error);
+      throw error;
+    }
   }
 
   async getMessages(projectId) {
-    return this.request(`/chat/${projectId}/messages`);
+    try {
+      return await this.request(`/chat/${projectId}/messages`);
+    } catch (error) {
+      console.error('Get messages error:', error);
+      throw error;
+    }
   }
 
   logout() {

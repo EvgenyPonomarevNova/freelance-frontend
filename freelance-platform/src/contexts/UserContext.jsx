@@ -37,23 +37,21 @@ export function UserProvider({ children }) {
     }
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const response = await apiService.getCurrentUser();
-      if (response.user) {
-        setUser(response.user);
-        localStorage.setItem("current_user", JSON.stringify(response.user));
-      }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      if (error.message.includes("401") || error.message.includes("403")) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("current_user");
-        setUser(null);
-      }
+const checkAuth = async () => {
+  try {
+    const response = await apiService.getCurrentUser();
+    if (response.user) {
+      setUser(response.user);
+      localStorage.setItem("current_user", JSON.stringify(response.user));
     }
-  };
-
+  } catch (error) {
+    if (error.message.includes("401") || error.message.includes("403")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("current_user");
+      setUser(null);
+    }
+  }
+};
   const loadProjects = async () => {
     try {
       const response = await apiService.getProjects();
@@ -86,21 +84,21 @@ export function UserProvider({ children }) {
   };
 
   // ОСНОВНЫЕ ФУНКЦИИ АУТЕНТИФИКАЦИИ
-  const login = async (email, password) => {
-    try {
-      const response = await apiService.login(email, password);
-      if (response.user && response.token) {
-        setUser(response.user);
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("current_user", JSON.stringify(response.user));
-        return response.user;
-      }
-      throw new Error("Invalid response from server");
-    } catch (error) {
-      throw error;
+const login = async (email, password) => {
+  try {
+    const response = await apiService.login(email, password);
+    
+    if (response.user && response.token) {
+      setUser(response.user);
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("current_user", JSON.stringify(response.user));
+      return response.user;
     }
-  };
-
+    throw new Error("Invalid response from server");
+  } catch (error) {
+    throw error;
+  }
+};
   const register = async (userData) => {
     try {
       const response = await apiService.register(userData);
@@ -117,36 +115,15 @@ export function UserProvider({ children }) {
   };
 
   // OAuth авторизация
-  const oauthLogin = async (provider, code) => {
-    try {
-      setLoading(true);
-      
-      // Для демо-режима, если код не предоставлен
-      if (!code || code.startsWith('demo')) {
-        return await quickOAuthLogin(provider);
-      }
-      
-      // Реальная OAuth авторизация через API
-      const response = await apiService.oauthLogin(provider, code);
-      
-      if (response.success && response.user && response.token) {
-        setUser(response.user);
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("current_user", JSON.stringify(response.user));
-        return { success: true, user: response.user };
-      } else {
-        throw new Error(response.error || "OAuth authentication failed");
-      }
-    } catch (error) {
-      console.error("OAuth login error:", error);
-      return { 
-        success: false, 
-        error: error.message || "Ошибка OAuth-авторизации" 
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
+const oauthLogin = async (provider, code) => {
+  // Четкое разделение демо и реального режима
+  if (isDemoMode || !code || code.startsWith('demo')) {
+    return await quickOAuthLogin(provider);
+  }
+  
+  // Реальный OAuth
+  return await realOAuthLogin(provider, code);
+};
 
   // Получение OAuth URL для редиректа
   const getOAuthUrl = (provider, action = 'login') => {
