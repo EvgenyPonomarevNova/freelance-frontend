@@ -3,26 +3,22 @@
   margin: 1.5rem 0;
 
   .oauth-divider {
-    text-align: center;
-    position: relative;
+    display: flex;
+    align-items: center;
     margin: 1.5rem 0;
-    
-    &::before {
+    color: #666;
+
+    &::before,
+    &::after {
       content: '';
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
+      flex: 1;
       height: 1px;
-      background: #e1e5e9;
+      background: #ddd;
     }
 
     span {
-      background: white;
       padding: 0 1rem;
-      color: #6c757d;
-      font-size: 0.875rem;
-      position: relative;
+      font-size: 0.9rem;
     }
   }
 
@@ -43,19 +39,19 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border: 2px solid var(--brand-color);
-    background: white;
-    color: var(--brand-color);
+    border: 2px solid #e0e0e0;
     border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 
     &:hover:not(.disabled) {
-      background: var(--brand-color);
-      color: white;
+      border-color: var(--brand-color);
+      background: color-mix(in srgb, var(--brand-color) 5%, white);
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     &.disabled {
@@ -68,14 +64,27 @@
     }
 
     .oauth-text {
-      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    // Специфичные стили для провайдеров
+    &.google-btn {
+      --brand-color: #4285F4;
+    }
+
+    &.yandex-btn {
+      --brand-color: #FF0000;
+    }
+
+    &.vk-btn {
+      --brand-color: #0077FF;
     }
   }
 
   .oauth-note {
     text-align: center;
     font-size: 0.8rem;
-    color: #6c757d;
+    color: #666;
     margin-top: 0.5rem;
   }
 }

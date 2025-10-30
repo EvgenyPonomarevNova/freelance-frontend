@@ -1,4 +1,4 @@
-// contexts/UserContext.jsx
+// src/contexts/UserContext.jsx
 import {
   createContext,
   useContext,
@@ -7,25 +7,9 @@ import {
   useCallback,
 } from "react";
 import { apiService } from "../services/api";
+import { OAUTH_CONFIG, getOAuthUrl } from "../config/oauth";
 
 const UserContext = createContext();
-
-// Конфигурация OAuth провайдеров - используем переменные окружения или значения по умолчанию
-export const OAUTH_CONFIG = {
-  google: {
-    clientId: import.meta.env?.REACT_APP_GOOGLE_CLIENT_ID || window.env?.REACT_APP_GOOGLE_CLIENT_ID || "demo-google-client-id",
-    scope: 'email profile',
-  },
-  yandex: {
-    clientId: import.meta.env?.REACT_APP_YANDEX_CLIENT_ID || window.env?.REACT_APP_YANDEX_CLIENT_ID || "demo-yandex-client-id",
-    authUrl: 'https://oauth.yandex.ru/authorize',
-  },
-  vk: {
-    clientId: import.meta.env?.REACT_APP_VK_CLIENT_ID || window.env?.REACT_APP_VK_CLIENT_ID || "demo-vk-client-id",
-    authUrl: 'https://oauth.vk.com/authorize',
-    scope: 'email',
-  }
-};
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -166,36 +150,7 @@ export function UserProvider({ children }) {
 
   // Получение OAuth URL для редиректа
   const getOAuthUrl = (provider, action = 'login') => {
-    const config = OAUTH_CONFIG[provider];
-    if (!config) {
-      console.error(`Unknown OAuth provider: ${provider}`);
-      return '#';
-    }
-
-    const baseUrls = {
-      google: `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${config.clientId}&` +
-        `redirect_uri=${encodeURIComponent(window.location.origin + '/oauth-callback')}&` +
-        `response_type=code&` +
-        `scope=${encodeURIComponent(config.scope)}&` +
-        `state=${provider}_${action}`,
-      
-      yandex: `https://oauth.yandex.ru/authorize?` +
-        `response_type=code&` +
-        `client_id=${config.clientId}&` +
-        `redirect_uri=${encodeURIComponent(window.location.origin + '/oauth-callback')}&` +
-        `state=${provider}_${action}`,
-      
-      vk: `https://oauth.vk.com/authorize?` +
-        `client_id=${config.clientId}&` +
-        `display=page&` +
-        `redirect_uri=${encodeURIComponent(window.location.origin + '/oauth-callback')}&` +
-        `scope=${config.scope}&` +
-        `response_type=code&` +
-        `state=${provider}_${action}`
-    };
-    
-    return baseUrls[provider];
+    return getOAuthUrl(provider, action);
   };
 
   // Быстрый OAuth вход (для демо и тестирования)
@@ -288,50 +243,50 @@ export function UserProvider({ children }) {
   };
 
   // Функции для работы с профилем
-const updateProfile = async (profileData) => {
-  try {
-    console.log('🔄 Updating profile with:', profileData);
-    
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Токен авторизации не найден');
+  const updateProfile = async (profileData) => {
+    try {
+      console.log('🔄 Updating profile with:', profileData);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      const result = await response.json();
+      console.log('📨 Server response:', result);
+
+      if (result.status === 'success') {
+        console.log('✅ Server returned success');
+        
+        // 🔥 ВАЖНО: Обновляем localStorage с данными с сервера
+        const updatedUser = result.user;
+        console.log('💾 Saving server data to localStorage:', updatedUser);
+        
+        localStorage.setItem('current_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        
+        return { 
+          success: true, 
+          user: updatedUser 
+        };
+      } else {
+        throw new Error(result.message || 'Failed to update profile');
+      }
+
+    } catch (error) {
+      console.error('❌ Update profile error:', error);
+      throw error;
     }
-
-    const response = await fetch('/api/users/profile', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    const result = await response.json();
-    console.log('📨 Server response:', result);
-
-    if (result.status === 'success') {
-      console.log('✅ Server returned success');
-      
-      // 🔥 ВАЖНО: Обновляем localStorage с данными с сервера
-      const updatedUser = result.user;
-      console.log('💾 Saving server data to localStorage:', updatedUser);
-      
-      localStorage.setItem('current_user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      
-      return { 
-        success: true, 
-        user: updatedUser 
-      };
-    } else {
-      throw new Error(result.message || 'Failed to update profile');
-    }
-
-  } catch (error) {
-    console.error('❌ Update profile error:', error);
-    throw error;
-  }
-};
+  };
 
   // Функция для связывания OAuth с существующим аккаунтом
   const linkOAuthAccount = async (provider, code) => {
@@ -510,7 +465,7 @@ const updateProfile = async (profileData) => {
     }
   }, [user, projects]);
 
-  // Остальные функции (getMyResponses, getUserStats, и т.д.)...
+  // Остальные функции остаются без изменений...
   const getMyResponses = useCallback(async () => {
     if (!user || user.role !== "freelancer") return [];
 

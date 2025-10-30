@@ -1,18 +1,23 @@
 // src/components/OAuthButtons/OAuthButtons.jsx
 import './OAuthButtons.scss';
 import { useUser } from '../../contexts/UserContext';
+import { getOAuthUrl } from '../../config/oauth';
 
 function OAuthButtons({ type = 'login', isLoading = false }) {
-  const { getOAuthUrl, quickOAuthLogin } = useUser();
+  const { quickOAuthLogin } = useUser();
 
   const handleOAuthClick = (provider) => {
     // Для демо-режима используем быстрый вход
     if (provider === 'demo') {
-      quickOAuthLogin('google');
+      quickOAuthLogin('yandex');
       return;
     }
 
+    // Получаем OAuth URL для редиректа
     const oauthUrl = getOAuthUrl(provider, type);
+    
+    console.log(`🔐 OAuth ${type} for ${provider}:`, oauthUrl);
+    
     // Сохраняем тип действия в sessionStorage для callback страницы
     sessionStorage.setItem('oauthAction', type);
     sessionStorage.setItem('oauthProvider', provider);
@@ -23,18 +28,18 @@ function OAuthButtons({ type = 'login', isLoading = false }) {
 
   const providers = [
     {
-      id: 'google',
-      name: 'Google',
-      icon: '🔍',
-      color: '#4285F4',
-      className: 'google-btn'
-    },
-    {
       id: 'yandex', 
       name: 'Yandex',
       icon: '🌐',
       color: '#FF0000',
       className: 'yandex-btn'
+    },
+    {
+      id: 'google',
+      name: 'Google',
+      icon: '🔍',
+      color: '#4285F4',
+      className: 'google-btn'
     },
     {
       id: 'vk',
@@ -65,6 +70,22 @@ function OAuthButtons({ type = 'login', isLoading = false }) {
             <span className="oauth-text">{provider.name}</span>
           </button>
         ))}
+      </div>
+
+      {/* Демо-кнопка для тестирования */}
+      <div className="demo-section">
+        <button
+          type="button"
+          className="oauth-btn demo-btn"
+          onClick={() => handleOAuthClick('demo')}
+          disabled={isLoading}
+        >
+          <span className="oauth-icon">🚀</span>
+          <span className="oauth-text">Быстрый демо-вход</span>
+        </button>
+        <div className="demo-note">
+          Для тестирования без реальной OAuth авторизации
+        </div>
       </div>
 
       <div className="oauth-note">
