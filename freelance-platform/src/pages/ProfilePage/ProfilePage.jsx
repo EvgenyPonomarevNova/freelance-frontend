@@ -28,8 +28,24 @@ const SKILL_LEVELS = [
   { value: "expert", label: "Эксперт" }
 ];
 
+// Умные подсказки для городов
+const CITY_SUGGESTIONS = [
+  "Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань",
+  "Нижний Новгород", "Челябинск", "Самара", "Омск", "Ростов-на-Дону",
+  "Уфа", "Красноярск", "Воронеж", "Пермь", "Волгоград"
+];
+
+// Умные подсказки для навыков по специализациям
+const SKILL_SUGGESTIONS = {
+  development: ["JavaScript", "TypeScript", "React", "Vue", "Angular", "Node.js", "Python", "PHP", "Java", "C#", "HTML", "CSS", "SASS", "Webpack", "Git"],
+  design: ["Figma", "Adobe Photoshop", "Adobe Illustrator", "UI/UX Design", "Web Design", "Mobile Design", "Prototyping", "Wireframing", "Sketch", "InVision"],
+  marketing: ["SEO", "SMM", "Контекстная реклама", "Аналитика", "Google Analytics", "Email маркетинг", "Копирайтинг", "Таргетинг", "Content Marketing"],
+  writing: ["Копирайтинг", "Рерайтинг", "SEO-тексты", "Статьи", "Блоги", "Технический текст", "Редактура", "Корректура"],
+  seo: ["Поисковая оптимизация", "Аналитика", "Семантика", "Ссылочная масса", "Технический SEO", "Google Analytics", "Яндекс.Метрика"],
+  other: ["Проектирование", "Анализ", "Управление", "Коммуникация", "Презентации", "Переговоры"]
+};
+
 function ProfilePage() {
-  // Хуки должны быть на верхнем уровне функции компонента
   const {
     user,
     loading,
@@ -42,6 +58,8 @@ function ProfilePage() {
     removePortfolioItem,
     addExperience,
     removeExperience,
+    getMyResponses,
+    updateResponse
   } = useUser();
 
   const navigate = useNavigate();
@@ -61,32 +79,47 @@ function ProfilePage() {
     skills: [],
     link: "",
     image: "",
+    projectImages: [],
+    duration: "",
+    budget: "",
+    category: "development"
   });
   const [newExperience, setNewExperience] = useState({
     position: "",
     company: "",
     period: "",
     description: "",
+    startDate: "",
+    endDate: "",
+    current: false
   });
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [showExperienceForm, setShowExperienceForm] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [myResponses, setMyResponses] = useState([]);
+  const [editingResponse, setEditingResponse] = useState(null);
 
-  // Загрузка статистики пользователя
+  // Загрузка статистики пользователя и откликов
   useEffect(() => {
-    const loadStats = async () => {
+    const loadData = async () => {
       if (user) {
         try {
-          const userStats = await getUserStats();
+          const [userStats, responses] = await Promise.all([
+            getUserStats(),
+            getMyResponses()
+          ]);
           setStats(userStats);
+          setMyResponses(responses || []);
         } catch (error) {
-          console.error("Error loading stats:", error);
+          console.error("Error loading data:", error);
         }
       }
     };
 
-    loadStats();
-  }, [user, getUserStats]);
+    loadData();
+  }, [user, getUserStats, getMyResponses]);
 
   // Инициализация данных профиля
   useEffect(() => {
@@ -118,54 +151,123 @@ function ProfilePage() {
     }
   }, [user]);
 
-  // Обработчики событий
-  const handleAvatarUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
+  // 🔥 ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ АВАТАРА
+  const handleAvatarUpload = async (file) => {
     try {
-      if (!file.type.startsWith("image/")) {
-        alert("Пожалуйста, выберите изображение");
+      console.log('🚀 handleAvatarUpload called with file:', file);
+      console.log('📁 File details:', {
+        name: file?.name,
+        size: file?.size,
+        type: file?.type,
+        isFile: file instanceof File,
+        isBlob: file instanceof Blob
+      });
+      
+      // Конвертируем файл в base64
+      const base64Avatar = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          console.log('✅ File converted to base64, length:', reader.result.length);
+          resolve(reader.result);
+        };
+        reader.onerror = error => {
+          console.error('❌ FileReader error:', error);
+          reject(error);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      console.log('🔐 Getting token...');
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token exists:', !!token);
+      
+      console.log('📨 Sending request to server...');
+      const response = await fetch('http://localhost:3001/api/users/profile/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          avatarData: base64Avatar
+        }),
+      });
+
+      console.log('📨 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Server error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Server success response:', result);
+      
+      if (result.success) {
+        console.log('🎉 Avatar uploaded successfully!');
+        return result.avatarUrl;
+      } else {
+        throw new Error(result.error || 'Failed to upload avatar');
+      }
+    } catch (error) {
+      console.error('💥 Avatar upload error:', error);
+      throw error;
+    }
+  };
+
+  // 🔥 ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБРАБОТКИ ИЗМЕНЕНИЯ АВАТАРА
+  const handleAvatarChange = (event) => {
+    console.log('🔄 Avatar change event fired');
+    console.log('🎯 Event target:', event.target);
+    console.log('📁 Files:', event.target.files);
+    
+    const file = event.target.files[0];
+    console.log('📁 Selected file:', file);
+    
+    if (file) {
+      // Проверяем размер файла (максимум 2MB для base64)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Файл слишком большой. Максимальный размер: 2MB');
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Размер файла не должен превышать 5MB");
+      // Проверяем тип файла
+      if (!file.type.startsWith('image/')) {
+        alert('Пожалуйста, выберите изображение');
         return;
       }
 
+      console.log('✅ File is valid, starting upload...');
+
+      // Сразу показываем превью
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const imageUrl = e.target.result;
-          setAvatarPreview(imageUrl);
+          console.log('🖼️ Setting avatar preview');
+          setAvatarPreview(e.target.result);
           
-          console.log('📤 Uploading avatar to server...');
-          const result = await updateProfile({ avatar: imageUrl });
+          console.log('📤 Starting file upload...');
+          const avatarUrl = await handleAvatarUpload(file);
           
-          if (result?.success) {
-            console.log('✅ Avatar saved successfully');
-          } else {
-            console.error('❌ Failed to save avatar');
-            alert('Ошибка при сохранении фото');
-            setAvatarPreview(user.profile?.avatar || null);
-          }
+          console.log('✅ Upload successful, updating profile...');
+          // Обновляем профиль с новым аватаром
+          await updateProfile({ avatar: avatarUrl });
+          
         } catch (error) {
-          console.error('❌ Avatar upload error:', error);
-          alert('Ошибка при загрузке фото');
-          setAvatarPreview(user.profile?.avatar || null);
+          console.error('❌ Error in avatar change:', error);
+          alert('Ошибка при загрузке аватара: ' + error.message);
         }
       };
       
-      reader.onerror = () => {
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error);
         alert('Ошибка при чтении файла');
       };
       
       reader.readAsDataURL(file);
-      
-    } catch (error) {
-      console.error('❌ File processing error:', error);
-      alert('Ошибка при обработке файла');
+    } else {
+      console.error('❌ No file selected or file is invalid');
     }
   };
 
@@ -179,6 +281,39 @@ function ProfilePage() {
       ...prev,
       [name]: value,
     }));
+
+    // Умные подсказки для города
+    if (name === 'location') {
+      const filteredCities = CITY_SUGGESTIONS.filter(city =>
+        city.toLowerCase().includes(value.toLowerCase())
+      );
+      setCitySuggestions(filteredCities);
+    }
+  };
+
+  const handleCitySelect = (city) => {
+    setProfileData(prev => ({ ...prev, location: city }));
+    setCitySuggestions([]);
+  };
+
+  const handleSkillInputChange = (value) => {
+    setNewSkill(value);
+    
+    // Умные подсказки для навыков
+    const category = profileData.title?.toLowerCase() || 'development';
+    const categoryKey = Object.keys(SKILL_SUGGESTIONS).find(key => 
+      category.includes(key)
+    ) || 'development';
+    
+    const filteredSkills = SKILL_SUGGESTIONS[categoryKey].filter(skill =>
+      skill.toLowerCase().includes(value.toLowerCase())
+    );
+    setSkillSuggestions(filteredSkills);
+  };
+
+  const handleSkillSelect = (skill) => {
+    setNewSkill(skill);
+    setSkillSuggestions([]);
   };
 
   const saveProfile = async () => {
@@ -241,6 +376,7 @@ function ProfilePage() {
     if (newSkill.trim() && !user.profile.skills?.find((s) => s.skill === newSkill.trim())) {
       addSkill(newSkill.trim(), skillLevel);
       setNewSkill("");
+      setSkillSuggestions([]);
     }
   };
 
@@ -250,40 +386,69 @@ function ProfilePage() {
     }
   };
 
-  const handleAddPortfolio = () => {
+  const handleAddPortfolio = async () => {
     if (newPortfolioItem.title.trim() && newPortfolioItem.description.trim()) {
-      addPortfolioItem({
-        ...newPortfolioItem,
-        id: Date.now(),
-        date: new Date().toLocaleDateString("ru-RU", {
-          month: "long",
-          year: "numeric",
-        }),
-      });
-      setNewPortfolioItem({
-        title: "",
-        description: "",
-        skills: [],
-        link: "",
-        image: "",
-      });
-      setShowPortfolioForm(false);
+      try {
+        await addPortfolioItem({
+          ...newPortfolioItem,
+          id: Date.now(),
+          date: new Date().toLocaleDateString("ru-RU", {
+            month: "long",
+            year: "numeric",
+          }),
+        });
+        setNewPortfolioItem({
+          title: "",
+          description: "",
+          skills: [],
+          link: "",
+          image: "",
+          projectImages: [],
+          duration: "",
+          budget: "",
+          category: "development"
+        });
+        setShowPortfolioForm(false);
+        alert('Проект добавлен в портфолио!');
+      } catch (error) {
+        alert('Ошибка при добавлении проекта: ' + error.message);
+      }
     }
   };
 
-  const handleAddExperience = () => {
+  const handleAddExperience = async () => {
     if (newExperience.position.trim() && newExperience.company.trim()) {
-      addExperience({
-        ...newExperience,
-        id: Date.now(),
-      });
-      setNewExperience({
-        position: "",
-        company: "",
-        period: "",
-        description: "",
-      });
-      setShowExperienceForm(false);
+      try {
+        await addExperience({
+          ...newExperience,
+          id: Date.now(),
+        });
+        setNewExperience({
+          position: "",
+          company: "",
+          period: "",
+          description: "",
+          startDate: "",
+          endDate: "",
+          current: false
+        });
+        setShowExperienceForm(false);
+        alert('Опыт работы добавлен!');
+      } catch (error) {
+        alert('Ошибка при добавлении опыта: ' + error.message);
+      }
+    }
+  };
+
+  const handleUpdateResponse = async (responseId, updates) => {
+    try {
+      await updateResponse(responseId, updates);
+      const responses = await getMyResponses();
+      setMyResponses(responses || []);
+      setEditingResponse(null);
+      alert('Отклик успешно обновлен!');
+    } catch (error) {
+      alert('Ошибка при обновлении отклика: ' + error.message);
     }
   };
 
@@ -294,12 +459,22 @@ function ProfilePage() {
   // Вспомогательные функции
   const getStatusConfig = (status) => {
     const configs = {
-      open: { text: '🔓 Открыт', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)' },
-      in_progress: { text: '⚡ В работе', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
-      completed: { text: '✅ Завершен', color: '#6b7280', bgColor: 'rgba(107, 114, 128, 0.1)' },
-      cancelled: { text: '❌ Отменен', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' }
+      pending: { text: '⏳ На рассмотрении', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)' },
+      viewed: { text: '👀 Просмотрено', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
+      accepted: { text: '✅ Принято', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)' },
+      rejected: { text: '❌ Отклонено', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' }
     };
-    return configs[status] || configs.open;
+    return configs[status] || configs.pending;
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   // Показываем загрузку
@@ -354,10 +529,11 @@ function ProfilePage() {
                   <span>📷</span>
                   <p>Сменить фото</p>
                 </div>
+                {/* 🔥 ИСПРАВЛЕННЫЙ INPUT */}
                 <input
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleAvatarUpload}
+                  onChange={handleAvatarChange} // Используем handleAvatarChange
                   accept="image/*"
                   style={{ display: "none" }}
                 />
@@ -415,6 +591,19 @@ function ProfilePage() {
                     onChange={handleProfileChange}
                     placeholder="Город, страна"
                   />
+                  {citySuggestions.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {citySuggestions.map(city => (
+                        <div 
+                          key={city} 
+                          className="suggestion-item"
+                          onClick={() => handleCitySelect(city)}
+                        >
+                          {city}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>О себе *</label>
@@ -530,10 +719,11 @@ function ProfilePage() {
               <span>📷</span>
               <p>Сменить фото</p>
             </div>
+            {/* 🔥 ИСПРАВЛЕННЫЙ INPUT */}
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleAvatarUpload}
+              onChange={handleAvatarChange} // Используем handleAvatarChange
               accept="image/*"
               style={{ display: "none" }}
             />
@@ -605,14 +795,29 @@ function ProfilePage() {
                   placeholder="Ставка в час (₽)"
                   className="edit-input small"
                 />
-                <input
-                  type="text"
-                  name="location"
-                  value={profileData.location}
-                  onChange={handleProfileChange}
-                  placeholder="Местоположение"
-                  className="edit-input small"
-                />
+                <div className="location-input-wrapper">
+                  <input
+                    type="text"
+                    name="location"
+                    value={profileData.location}
+                    onChange={handleProfileChange}
+                    placeholder="Местоположение"
+                    className="edit-input small"
+                  />
+                  {citySuggestions.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {citySuggestions.map(city => (
+                        <div 
+                          key={city} 
+                          className="suggestion-item"
+                          onClick={() => handleCitySelect(city)}
+                        >
+                          {city}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <input
                   type="text"
                   name="experience"
@@ -786,29 +991,46 @@ function ProfilePage() {
             <div className="section-header">
               <h2>🎯 Навыки и технологии</h2>
               {isEditing && (
-                <div className="add-skill">
-                  <input
-                    type="text"
-                    placeholder="Добавить навык..."
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="skill-input"
-                  />
-                  <select
-                    value={skillLevel}
-                    onChange={(e) => setSkillLevel(e.target.value)}
-                    className="level-select"
-                  >
-                    {SKILL_LEVELS.map(level => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button onClick={addNewSkill} className="add-skill-btn">
-                    +
-                  </button>
+                <div className="add-skill-wrapper">
+                  <div className="add-skill">
+                    <div className="skill-input-wrapper">
+                      <input
+                        type="text"
+                        placeholder="Добавить навык..."
+                        value={newSkill}
+                        onChange={(e) => handleSkillInputChange(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="skill-input"
+                      />
+                      {skillSuggestions.length > 0 && (
+                        <div className="suggestions-dropdown">
+                          {skillSuggestions.map(skill => (
+                            <div 
+                              key={skill} 
+                              className="suggestion-item"
+                              onClick={() => handleSkillSelect(skill)}
+                            >
+                              {skill}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <select
+                      value={skillLevel}
+                      onChange={(e) => setSkillLevel(e.target.value)}
+                      className="level-select"
+                    >
+                      {SKILL_LEVELS.map(level => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button onClick={addNewSkill} className="add-skill-btn">
+                      +
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -852,23 +1074,47 @@ function ProfilePage() {
             {showPortfolioForm && (
               <div className="portfolio-form">
                 <h3>Добавить проект в портфолио</h3>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Название проекта"
-                    value={newPortfolioItem.title}
-                    onChange={(e) =>
-                      setNewPortfolioItem((prev) => ({
-                        ...prev,
-                        title: e.target.value,
-                      }))
-                    }
-                    className="form-input"
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Название проекта *</label>
+                    <input
+                      type="text"
+                      placeholder="Название проекта"
+                      value={newPortfolioItem.title}
+                      onChange={(e) =>
+                        setNewPortfolioItem((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Категория</label>
+                    <select
+                      value={newPortfolioItem.category}
+                      onChange={(e) =>
+                        setNewPortfolioItem((prev) => ({
+                          ...prev,
+                          category: e.target.value,
+                        }))
+                      }
+                      className="form-select"
+                    >
+                      <option value="development">Разработка</option>
+                      <option value="design">Дизайн</option>
+                      <option value="marketing">Маркетинг</option>
+                      <option value="writing">Копирайтинг</option>
+                      <option value="seo">SEO</option>
+                      <option value="other">Другое</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="form-group">
+                  <label>Описание проекта *</label>
                   <textarea
-                    placeholder="Описание проекта"
+                    placeholder="Подробное описание проекта, используемых технологий, решаемых задач..."
                     value={newPortfolioItem.description}
                     onChange={(e) =>
                       setNewPortfolioItem((prev) => ({
@@ -877,13 +1123,46 @@ function ProfilePage() {
                       }))
                     }
                     className="form-textarea"
-                    rows="3"
+                    rows="4"
                   />
                 </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Срок выполнения</label>
+                    <input
+                      type="text"
+                      placeholder="Например: 2 недели, 1 месяц"
+                      value={newPortfolioItem.duration}
+                      onChange={(e) =>
+                        setNewPortfolioItem((prev) => ({
+                          ...prev,
+                          duration: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Бюджет (₽)</label>
+                    <input
+                      type="number"
+                      placeholder="Сумма проекта"
+                      value={newPortfolioItem.budget}
+                      onChange={(e) =>
+                        setNewPortfolioItem((prev) => ({
+                          ...prev,
+                          budget: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                </div>
                 <div className="form-group">
+                  <label>Ссылка на проект (необязательно)</label>
                   <input
                     type="text"
-                    placeholder="Ссылка на проект (необязательно)"
+                    placeholder="https://example.com"
                     value={newPortfolioItem.link}
                     onChange={(e) =>
                       setNewPortfolioItem((prev) => ({
@@ -895,9 +1174,10 @@ function ProfilePage() {
                   />
                 </div>
                 <div className="form-group">
+                  <label>URL главного изображения (необязательно)</label>
                   <input
                     type="text"
-                    placeholder="URL изображения (необязательно)"
+                    placeholder="https://example.com/image.jpg"
                     value={newPortfolioItem.image}
                     onChange={(e) =>
                       setNewPortfolioItem((prev) => ({
@@ -910,7 +1190,7 @@ function ProfilePage() {
                 </div>
                 <div className="form-actions">
                   <button onClick={handleAddPortfolio} className="save-btn">
-                    Добавить
+                    Добавить в портфолио
                   </button>
                   <button
                     onClick={() => setShowPortfolioForm(false)}
@@ -928,16 +1208,15 @@ function ProfilePage() {
                   <PortfolioItem
                     key={item.id}
                     item={item}
+                    onRemove={removePortfolioItem}
                     editable={isEditing}
-                    onEdit={(item) => console.log("Edit:", item)}
-                    onDelete={removePortfolioItem}
                   />
                 ))
               ) : (
                 <EmptyState
                   icon="💼"
-                  title="Проекты в портфолио еще не добавлены"
-                  description={isEditing ? "Начните с добавления первого проекта" : "Портфолио пока пустое"}
+                  title="Портфолио пустое"
+                  description={isEditing ? "Добавьте свои первые проекты в портфолио" : "В портфолио пока нет проектов"}
                 />
               )}
             </div>
@@ -953,7 +1232,7 @@ function ProfilePage() {
                   className="add-experience-btn"
                   onClick={() => setShowExperienceForm(true)}
                 >
-                  + Добавить опыт
+                  + Добавить опыт работы
                 </button>
               )}
             </div>
@@ -961,51 +1240,88 @@ function ProfilePage() {
             {showExperienceForm && (
               <div className="experience-form">
                 <h3>Добавить опыт работы</h3>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Должность"
-                    value={newExperience.position}
-                    onChange={(e) =>
-                      setNewExperience((prev) => ({
-                        ...prev,
-                        position: e.target.value,
-                      }))
-                    }
-                    className="form-input"
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Должность *</label>
+                    <input
+                      type="text"
+                      placeholder="Например: Frontend Developer"
+                      value={newExperience.position}
+                      onChange={(e) =>
+                        setNewExperience((prev) => ({
+                          ...prev,
+                          position: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Компания *</label>
+                    <input
+                      type="text"
+                      placeholder="Название компании"
+                      value={newExperience.company}
+                      onChange={(e) =>
+                        setNewExperience((prev) => ({
+                          ...prev,
+                          company: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Начало работы</label>
+                    <input
+                      type="month"
+                      value={newExperience.startDate}
+                      onChange={(e) =>
+                        setNewExperience((prev) => ({
+                          ...prev,
+                          startDate: e.target.value,
+                        }))
+                      }
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Окончание</label>
+                    <input
+                      type="month"
+                      value={newExperience.endDate}
+                      onChange={(e) =>
+                        setNewExperience((prev) => ({
+                          ...prev,
+                          endDate: e.target.value,
+                        }))
+                      }
+                      disabled={newExperience.current}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group checkbox-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={newExperience.current}
+                        onChange={(e) =>
+                          setNewExperience((prev) => ({
+                            ...prev,
+                            current: e.target.checked,
+                          }))
+                        }
+                      />
+                      Работаю сейчас
+                    </label>
+                  </div>
                 </div>
                 <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Компания"
-                    value={newExperience.company}
-                    onChange={(e) =>
-                      setNewExperience((prev) => ({
-                        ...prev,
-                        company: e.target.value,
-                      }))
-                    }
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Период работы"
-                    value={newExperience.period}
-                    onChange={(e) =>
-                      setNewExperience((prev) => ({
-                        ...prev,
-                        period: e.target.value,
-                      }))
-                    }
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group">
+                  <label>Описание обязанностей</label>
                   <textarea
-                    placeholder="Описание обязанностей"
+                    placeholder="Опишите ваши обязанности и достижения..."
                     value={newExperience.description}
                     onChange={(e) =>
                       setNewExperience((prev) => ({
@@ -1014,12 +1330,12 @@ function ProfilePage() {
                       }))
                     }
                     className="form-textarea"
-                    rows="3"
+                    rows="4"
                   />
                 </div>
                 <div className="form-actions">
                   <button onClick={handleAddExperience} className="save-btn">
-                    Добавить
+                    Добавить опыт
                   </button>
                   <button
                     onClick={() => setShowExperienceForm(false)}
@@ -1032,30 +1348,34 @@ function ProfilePage() {
             )}
 
             <div className="experience-list">
-              {user.profile.experienceList?.length > 0 ? (
-                user.profile.experienceList.map((exp) => (
+              {user.profile.experience?.length > 0 ? (
+                user.profile.experience.map((exp) => (
                   <div key={exp.id} className="experience-item">
                     <div className="experience-header">
-                      <h3>{exp.position}</h3>
+                      <h4>{exp.position}</h4>
                       {isEditing && (
                         <button
-                          className="delete-btn"
                           onClick={() => removeExperience(exp.id)}
+                          className="remove-btn"
                         >
-                          🗑️
+                          ❌
                         </button>
                       )}
                     </div>
-                    <p className="company">🏢 {exp.company}</p>
-                    <p className="period">📅 {exp.period}</p>
-                    <p className="description">{exp.description}</p>
+                    <p className="company">{exp.company}</p>
+                    <p className="period">
+                      {exp.startDate} - {exp.current ? "Настоящее время" : exp.endDate}
+                    </p>
+                    {exp.description && (
+                      <p className="description">{exp.description}</p>
+                    )}
                   </div>
                 ))
               ) : (
                 <EmptyState
                   icon="📈"
-                  title="Информация об опыте работы пока не добавлена"
-                  description={isEditing ? "Добавьте свой первый опыт работы" : "Опыт работы пока не указан"}
+                  title="Опыт работы не указан"
+                  description={isEditing ? "Добавьте информацию о своем опыте работы" : "Информация об опыте работы пока не добавлена"}
                 />
               )}
             </div>
@@ -1064,37 +1384,127 @@ function ProfilePage() {
 
         {activeTab === "responses" && (
           <section className="responses-section">
-            <h2>📥 Мои отклики</h2>
-            <div className="responses-stats">
-              <div className="stat-card">
-                <div className="stat-number">{stats?.totalResponses || 0}</div>
-                <div className="stat-label">Всего откликов</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{stats?.activeResponses || 0}</div>
-                <div className="stat-label">На рассмотрении</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">
-                  {stats?.acceptedResponses || 0}
-                </div>
-                <div className="stat-label">Принято</div>
+            <div className="section-header">
+              <h2>📥 Мои отклики</h2>
+              <div className="response-filters">
+                <select className="filter-select">
+                  <option value="all">Все отклики</option>
+                  <option value="pending">На рассмотрении</option>
+                  <option value="viewed">Просмотрены</option>
+                  <option value="accepted">Приняты</option>
+                  <option value="rejected">Отклонены</option>
+                </select>
               </div>
             </div>
+
             <div className="responses-list">
-              <EmptyState
-                icon="📥"
-                title="У вас пока нет откликов на проекты"
-                description="Начните искать интересные проекты и отправляйте отклики"
-                action={
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => navigate("/projects")}
-                  >
-                    Найти проекты
-                  </button>
-                }
-              />
+              {myResponses.length > 0 ? (
+                myResponses.map((response) => (
+                  <div key={response.id} className="response-item">
+                    <div className="response-header">
+                      <div className="project-info">
+                        <h4 className="project-title">
+                          {response.projectTitle || "Проект"}
+                        </h4>
+                        <span className="response-date">
+                          📅 {formatDate(response.createdAt)}
+                        </span>
+                      </div>
+                      <div className="response-status">
+                        <span 
+                          className="status-badge"
+                          style={{
+                            color: getStatusConfig(response.status).color,
+                            backgroundColor: getStatusConfig(response.status).bgColor,
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {getStatusConfig(response.status).text}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="response-details">
+                      <div className="proposal-section">
+                        <p className="proposal-text">
+                          {response.proposal || "Отклик отправлен"}
+                        </p>
+                        {response.budget && (
+                          <p className="proposed-budget">
+                            💰 Предложенная сумма: <strong>{response.budget} ₽</strong>
+                          </p>
+                        )}
+                        {response.deadline && (
+                          <p className="proposed-deadline">
+                            ⏱️ Предложенный срок: <strong>{response.deadline}</strong>
+                        </p>
+                        )}
+                      </div>
+
+                      {editingResponse === response.id ? (
+                        <div className="edit-response-form">
+                          <textarea
+                            value={response.proposal}
+                            onChange={(e) => handleUpdateResponse(response.id, {
+                              proposal: e.target.value
+                            })}
+                            className="edit-proposal-textarea"
+                            rows="3"
+                            placeholder="Введите ваш отклик..."
+                          />
+                          <div className="edit-response-actions">
+                            <button 
+                              className="save-btn small"
+                              onClick={() => handleUpdateResponse(response.id, {
+                                proposal: response.proposal
+                              })}
+                            >
+                              Сохранить
+                            </button>
+                            <button 
+                              className="cancel-btn small"
+                              onClick={() => setEditingResponse(null)}
+                            >
+                              Отмена
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="response-actions">
+                          <button 
+                            className="edit-response-btn"
+                            onClick={() => setEditingResponse(response.id)}
+                          >
+                            ✏️ Редактировать
+                          </button>
+                          {response.status === 'viewed' && (
+                            <span className="viewed-indicator">
+                              👀 Заказчик просмотрел ваш отклик
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  icon="📥"
+                  title="Откликов пока нет"
+                  description="Начните откликаться на проекты, и они появятся здесь"
+                  action={
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => navigate("/projects")}
+                    >
+                      Найти проекты
+                    </button>
+                  }
+                />
+              )}
             </div>
           </section>
         )}

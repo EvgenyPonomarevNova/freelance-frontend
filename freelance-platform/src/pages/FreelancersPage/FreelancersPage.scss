@@ -380,14 +380,11 @@
 
 // Сетка фрилансеров
 .freelancers-container {
-  text-align: center;
-
   .freelancers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
-    justify-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 2rem;
   }
 
   .pagination {
@@ -478,6 +475,16 @@
     font-weight: 600;
     font-size: 1rem;
     min-width: 180px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
   }
 }
 
@@ -595,5 +602,17 @@
 
   .freelancers-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .page-header {
+    .header-content {
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      p {
+        font-size: 1rem;
+      }
+    }
   }
 }

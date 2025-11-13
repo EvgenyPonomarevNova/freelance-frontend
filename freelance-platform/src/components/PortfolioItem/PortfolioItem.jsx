@@ -1,44 +1,57 @@
-import './PortfolioItem.scss'
+// src/components/PortfolioItem/PortfolioItem.jsx
+import "./PortfolioItem.scss";
 
-function PortfolioItem({ item, onEdit, onDelete, editable = false }) {
+function PortfolioItem({ item, onRemove, editable = false }) {
   return (
     <div className="portfolio-item">
-      <div className="portfolio-image">
-        {item.image ? (
-          <img src={item.image} alt={item.title} />
-        ) : (
-          <div className="image-placeholder">🎨</div>
+      <div className="portfolio-header">
+        <div className="portfolio-info">
+          <h3 className="portfolio-title">{item.title}</h3>
+          <span className="portfolio-date">{item.date}</span>
+        </div>
+        {editable && (
+          <button 
+            className="remove-portfolio-btn"
+            onClick={() => onRemove(item.id)}
+            title="Удалить проект"
+          >
+            ❌
+          </button>
         )}
       </div>
       
-      <div className="portfolio-content">
-        <h3 className="portfolio-title">{item.title}</h3>
-        <p className="portfolio-description">{item.description}</p>
-        
-        <div className="portfolio-skills">
-          {item.skills.map(skill => (
-            <span key={skill} className="skill-badge">{skill}</span>
-          ))}
-        </div>
-        
-        <div className="portfolio-meta">
-          <span className="portfolio-date">{item.date}</span>
-          {item.link && (
-            <a href={item.link} target="_blank" rel="noopener noreferrer" className="portfolio-link">
-              Посмотреть проект
-            </a>
-          )}
-        </div>
-      </div>
-
-      {editable && (
-        <div className="portfolio-actions">
-          <button className="edit-btn" onClick={() => onEdit(item)}>✏️</button>
-          <button className="delete-btn" onClick={() => onDelete(item.id)}>🗑️</button>
+      {item.image && (
+        <div className="portfolio-image">
+          <img src={item.image} alt={item.title} />
         </div>
       )}
+      
+      <p className="portfolio-description">{item.description}</p>
+      
+      <div className="portfolio-details">
+        {item.duration && (
+          <span className="detail">⏱️ {item.duration}</span>
+        )}
+        {item.budget && (
+          <span className="detail">💰 {item.budget} ₽</span>
+        )}
+        {item.category && (
+          <span className="detail">📁 {item.category}</span>
+        )}
+      </div>
+      
+      {item.link && (
+        <a 
+          href={item.link} 
+          className="portfolio-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          🔗 Посмотреть проект
+        </a>
+      )}
     </div>
-  )
+  );
 }
 
-export default PortfolioItem
+export default PortfolioItem;

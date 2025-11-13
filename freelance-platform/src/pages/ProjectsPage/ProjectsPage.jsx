@@ -2,7 +2,7 @@
 import './ProjectsPage.scss'
 import { useState, useEffect, useMemo } from 'react'
 import ProjectCard from '../../components/ProjectCard/ProjectCard'
-import { apiService } from '../../services/api' // ✅ ДОБАВЬТЕ ИМПОРТ
+import { apiService } from '../../services/api'
 
 function ProjectsPage() {
   const [projects, setProjects] = useState([])
@@ -19,37 +19,158 @@ function ProjectsPage() {
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  // Загрузка проектов ИЗ РЕАЛЬНОГО API
-  useEffect(() => {
-    loadProjects()
-  }, [])
-
-const loadProjects = async () => {
-  try {
-    const response = await apiService.getProjects();
-    const projects = response.projects || [];
-    
-    if (projects.length === 0) {
-      // Загрузить демо-данные или показать сообщение
-      loadDemoProjects();
-    } else {
-      setProjects(projects);
+  // 🔥 ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ИЗ LOCALSTORAGE
+  const loadProjectsFromStorage = () => {
+    try {
+      const savedProjects = localStorage.getItem("nexus_projects");
+      if (savedProjects) {
+        const parsed = JSON.parse(savedProjects);
+        console.log('📂 Loaded projects from storage:', parsed.length);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (error) {
+      console.error("Error loading projects from storage:", error);
     }
-  } catch (error) {
-    console.error('Failed to load projects:', error);
-    loadProjectsFromStorage(); // Резервный вариант
-  }
-};
-  // Фильтрация и сортировка (обновим для работы с реальными данными)
+    return [];
+  };
+
+  // 🔥 ФУНКЦИЯ ДЛЯ ДЕМО-ДАННЫХ
+  const loadDemoProjects = () => {
+    console.log('🎭 Loading demo projects');
+    const demoProjects = [
+      {
+        id: 1,
+        title: "Разработка интернет-магазина",
+        description: "Нужно создать современный интернет-магазин с системой оплаты и каталогом товаров.",
+        category: "development",
+        budget: 50000,
+        skills: ["JavaScript", "React", "Node.js", "MongoDB"],
+        status: "open",
+        responses: [],
+        created_at: new Date().toISOString(),
+        client: {
+          id: 1,
+          profile: {
+            name: "Иван Петров",
+            rating: 4.8
+          }
+        }
+      },
+      {
+        id: 2,
+        title: "Дизайн лендинга для стартапа",
+        description: "Требуется креативный дизайн лендинга в современном стиле.",
+        category: "design",
+        budget: 25000,
+        skills: ["Figma", "UI/UX", "Adobe Photoshop"],
+        status: "open",
+        responses: [],
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        client: {
+          id: 2,
+          profile: {
+            name: "Анна Сидорова",
+            rating: 4.9
+          }
+        }
+      },
+      {
+        id: 3,
+        title: "SEO продвижение сайта",
+        description: "Необходимо вывести сайт в топ поисковой выдачи по ключевым запросам.",
+        category: "seo",
+        budget: 35000,
+        skills: ["SEO", "Аналитика", "Контент-маркетинг"],
+        status: "open",
+        responses: [],
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        client: {
+          id: 3,
+          profile: {
+            name: "Петр Иванов",
+            rating: 4.7
+          }
+        }
+      }
+    ];
+    setProjects(demoProjects);
+    // Сохраняем демо-проекты в localStorage для будущего использования
+    localStorage.setItem("nexus_projects", JSON.stringify(demoProjects));
+  };
+
+  // 🔥 ОСНОВНАЯ ФУНКЦИЯ ЗАГРУЗКИ ПРОЕКТОВ
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading projects from API...');
+      
+      const response = await apiService.getProjects();
+      console.log('📨 API response:', response);
+      
+      // 🔥 РАЗНЫЕ ВАРИАНТЫ СТРУКТУРЫ ОТВЕТА
+      const projectsData = response.projects || response.data || response;
+      
+      if (Array.isArray(projectsData) && projectsData.length > 0) {
+        console.log(`✅ Loaded ${projectsData.length} projects from API`);
+        setProjects(projectsData);
+        
+        // Сохраняем в localStorage как резервную копию
+        localStorage.setItem("nexus_projects", JSON.stringify(projectsData));
+      } else {
+        console.log('📂 No projects from API, loading from storage...');
+        const savedProjects = loadProjectsFromStorage();
+        
+        if (savedProjects.length > 0) {
+          setProjects(savedProjects);
+        } else {
+          console.log('🎭 No projects found, loading demo data...');
+          loadDemoProjects();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to load projects from API:', error);
+      
+      // 🔥 РЕЗЕРВНЫЙ ВАРИАНТ: загружаем из localStorage
+      try {
+        const savedProjects = loadProjectsFromStorage();
+        if (savedProjects.length > 0) {
+          console.log(`📂 Loaded ${savedProjects.length} projects from storage`);
+          setProjects(savedProjects);
+        } else {
+          console.log('🎭 Loading demo projects as fallback');
+          loadDemoProjects();
+        }
+      } catch (storageError) {
+        console.error('❌ Failed to load projects from storage:', storageError);
+        loadDemoProjects();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Загрузка проектов при монтировании компонента
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  // Фильтрация и сортировка
   const filteredAndSortedProjects = useMemo(() => {
+    if (!Array.isArray(projects)) {
+      console.warn('⚠️ Projects is not an array:', projects);
+      return [];
+    }
+
     let filtered = projects.filter(project => {
+      if (!project || typeof project !== 'object') return false;
+
       // Поиск по тексту
       const matchesSearch = searchTerm === '' || 
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.skills?.some(skill => 
+        (project.title && project.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (Array.isArray(project.skills) && project.skills.some(skill => 
           skill.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        ))
 
       // Фильтр по категории
       const matchesCategory = !filters.category || project.category === filters.category
@@ -66,15 +187,15 @@ const loadProjects = async () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
+          return new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0)
         case 'oldest':
-          return new Date(a.createdAt || a.created_at) - new Date(b.createdAt || b.created_at)
+          return new Date(a.createdAt || a.created_at || 0) - new Date(b.createdAt || b.created_at || 0)
         case 'budget_high':
           return (parseInt(b.budget) || 0) - (parseInt(a.budget) || 0)
         case 'budget_low':
           return (parseInt(a.budget) || 0) - (parseInt(b.budget) || 0)
         case 'popular':
-          return (b.responses?.length || 0) - (a.responses?.length || 0)
+          return ((b.responses && b.responses.length) || 0) - ((a.responses && a.responses.length) || 0)
         default:
           return 0
       }
@@ -82,8 +203,6 @@ const loadProjects = async () => {
 
     return filtered
   }, [projects, searchTerm, sortBy, filters])
-
-  // ... остальной код без изменений
 
   const categories = [
     { value: '', label: 'Все категории' },
@@ -144,7 +263,7 @@ const loadProjects = async () => {
         </div>
         <div className="header-stats">
           <div className="stat">
-            <strong>{filteredAndSortedProjects.length}</strong>
+            <strong>{Array.isArray(filteredAndSortedProjects) ? filteredAndSortedProjects.length : 0}</strong>
             <span>проектов найдено</span>
           </div>
         </div>
@@ -312,6 +431,13 @@ const loadProjects = async () => {
             <p>Попробуйте изменить параметры поиска или очистить фильтры</p>
             <button className="btn btn-primary" onClick={clearFilters}>
               Очистить фильтры
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={loadDemoProjects}
+              style={{marginTop: '10px'}}
+            >
+              Загрузить демо-проекты
             </button>
           </div>
         )}

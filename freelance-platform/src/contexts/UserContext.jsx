@@ -6,99 +6,462 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { apiService } from "../services/api";
-import { OAUTH_CONFIG, getOAuthUrl } from "../config/oauth";
 
 const UserContext = createContext();
+
+// 🔥 Базовый URL API
+const API_BASE_URL = 'http://localhost:3001';
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
 
-  // Загрузка данных при инициализации
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("current_user");
-
-    if (token && savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        Promise.all([checkAuth(), loadProjects()]).finally(() =>
-          setLoading(false)
-        );
-      } catch (error) {
-        console.error("Error parsing saved user:", error);
-        setLoading(false);
-      }
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-const checkAuth = async () => {
-  try {
-    const response = await apiService.getCurrentUser();
-    if (response.user) {
-      setUser(response.user);
-      localStorage.setItem("current_user", JSON.stringify(response.user));
-    }
-  } catch (error) {
-    if (error.message.includes("401") || error.message.includes("403")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("current_user");
-      setUser(null);
-    }
-  }
-};
-  const loadProjects = async () => {
-    try {
-      const response = await apiService.getProjects();
-      if (response.projects) {
-        setProjects(response.projects);
-      }
-    } catch (error) {
-      console.error("Error loading projects from API:", error);
-      loadProjectsFromStorage();
-    }
-  };
-
-  const loadProjectsFromStorage = () => {
-    try {
-      const savedProjects = localStorage.getItem("nexus_projects");
-      if (savedProjects) {
-        setProjects(JSON.parse(savedProjects));
-      }
-    } catch (error) {
-      console.error("Error loading projects from storage:", error);
-    }
-  };
-
-  const saveProjectsToStorage = (updatedProjects) => {
-    try {
-      localStorage.setItem("nexus_projects", JSON.stringify(updatedProjects));
-    } catch (error) {
-      console.error("Error saving projects to storage:", error);
-    }
-  };
-
-  // ОСНОВНЫЕ ФУНКЦИИ АУТЕНТИФИКАЦИИ
-const login = async (email, password) => {
-  try {
-    const response = await apiService.login(email, password);
+  // 🔥 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ API
+  const apiRequest = async (endpoint, options = {}) => {
+    const token = localStorage.getItem('token');
     
-    if (response.user && response.token) {
-      setUser(response.user);
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("current_user", JSON.stringify(response.user));
-      return response.user;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (options.body) {
+      config.body = JSON.stringify(options.body);
     }
-    throw new Error("Invalid response from server");
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}: ${errorText}`);
+    }
+
+    return response.json();
+  };
+
+  // 🔥 ОСНОВНЫЕ ФУНКЦИИ API
+  const apiService = {
+    // Аутентификация
+    login: async (email, password) => {
+      return apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+    },
+
+    register: async (userData) => {
+      return apiRequest('/api/auth/register', {
+        method: 'POST',
+        body: userData
+      });
+    },
+
+    getCurrentUser: async () => {
+      return apiRequest('/api/users/profile');
+    },
+
+    // OAuth
+    oauthLogin: async (provider, code) => {
+      return apiRequest(`/api/auth/oauth/${provider}/login`, {
+        method: 'POST',
+        body: { code }
+      });
+    },
+
+    // Профиль
+    updateProfile: async (profileData) => {
+      return apiRequest('/api/users/profile', {
+        method: 'PATCH',
+        body: profileData
+      });
+    },
+
+    // Проекты
+    getProjects: async (params = {}) => {
+      const queryString = new URLSearchParams(params).toString();
+      return apiRequest(`/api/projects?${queryString}`);
+    },
+
+    getMyProjects: async () => {
+      return apiRequest('/api/projects/client/my-projects');
+    },
+
+    createProject: async (projectData) => {
+      return apiRequest('/api/projects', {
+        method: 'POST',
+        body: projectData
+      });
+    },
+
+    // Отклики
+    getMyResponses: async () => {
+      return apiRequest('/api/projects/my/responses');
+    },
+
+    respondToProject: async (projectId, responseData) => {
+      return apiRequest(`/api/projects/${projectId}/respond`, {
+        method: 'POST',
+        body: responseData
+      });
+    },
+
+    updateResponse: async (responseId, updates) => {
+      return apiRequest(`/api/projects/responses/${responseId}`, {
+        method: 'PATCH',
+        body: updates
+      });
+    }
+  };
+
+  // 🔥 ПРОЕКТЫ - ПЕРЕНЕСЕМ ЭТИ ФУНКЦИИ В НАЧАЛО
+  const getMyProjects = useCallback(async () => {
+    if (!user) return [];
+
+    try {
+      const response = await apiService.getMyProjects();
+      return response.data || response.projects || [];
+    } catch (error) {
+      console.error('Error getting projects:', error);
+      return [];
+    }
+  }, [user]);
+
+  const createProject = useCallback(async (projectData) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const result = await apiService.createProject(projectData);
+      
+      if (result.success) {
+        const newProject = result.data || result.project;
+        const updatedProjects = [...projects, newProject];
+        setProjects(updatedProjects);
+        return { success: true, project: newProject };
+      } else {
+        throw new Error(result.error || 'Failed to create project');
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  }, [user, projects]);
+
+  // 🔥 ОТКЛИКИ
+  const getMyResponses = useCallback(async () => {
+    if (!user) return [];
+
+    try {
+      const response = await apiService.getMyResponses();
+      return response.data || response.responses || [];
+    } catch (error) {
+      console.error('Error getting responses:', error);
+      
+      // 🔥 РЕЗЕРВНЫЙ ВАРИАНТ - данные из localStorage
+      const savedUser = localStorage.getItem('current_user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        return userData.profile?.responses || [];
+      }
+      
+      return [];
+    }
+  }, [user]);
+
+  const updateResponse = useCallback(async (responseId, updates) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const result = await apiService.updateResponse(responseId, updates);
+      
+      if (result.success) {
+        // 🔥 ОБНОВЛЯЕМ ЛОКАЛЬНЫЕ ДАННЫЕ
+        const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+        const updatedResponses = (currentUser.profile?.responses || []).map(response => 
+          response.id === responseId ? { ...response, ...updates } : response
+        );
+        
+        const updatedUser = {
+          ...currentUser,
+          profile: {
+            ...currentUser.profile,
+            responses: updatedResponses
+          }
+        };
+        
+        localStorage.setItem('current_user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        
+        return { success: true, response: result.data };
+      } else {
+        throw new Error(result.error || 'Failed to update response');
+      }
+    } catch (error) {
+      console.error('Error updating response:', error);
+      throw error;
+    }
+  }, [user]);
+
+  // 🔥 СТАТИСТИКА ПОЛЬЗОВАТЕЛЯ
+  const getUserStats = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const [myProjects, myResponses] = await Promise.all([
+        getMyProjects(),
+        getMyResponses(),
+      ]);
+
+      if (user.role === "client") {
+        return {
+          totalProjects: myProjects.length,
+          activeProjects: myProjects.filter((p) => p.status === "open").length,
+          completedProjects: myProjects.filter((p) => p.status === "completed").length,
+          totalResponses: myProjects.reduce((acc, project) => acc + (project.responses?.length || 0), 0),
+          rating: user.profile?.rating || 5.0,
+        };
+      } else {
+        const responses = Array.isArray(myResponses) ? myResponses : [];
+        return {
+          completedProjects: user.profile?.completedProjects || 0,
+          activeResponses: responses.filter((r) => r.status === "pending").length,
+          acceptedResponses: responses.filter((r) => r.status === "accepted").length,
+          totalResponses: responses.length,
+          rating: user.profile?.rating || 5.0,
+        };
+      }
+    } catch (error) {
+      console.error("Error calculating stats:", error);
+      return {
+        totalProjects: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        totalResponses: 0,
+        activeResponses: 0,
+        acceptedResponses: 0,
+        rating: user.profile?.rating || 5.0,
+      };
+    }
+  }, [user, getMyProjects, getMyResponses]);
+
+  // 🔥 ФУНКЦИИ ДЛЯ РАБОТЫ С ПРОФИЛЕМ
+const updateProfile = useCallback(async (profileData) => {
+  try {
+    console.log('🔄 Updating profile with:', profileData);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Токен авторизации не найден');
+    }
+
+    // 🔥 ПРЕОБРАЗУЕМ И ВАЛИДИРУЕМ ДАННЫЕ ДЛЯ СЕРВЕРА
+    const processedData = {
+      name: profileData.name || user?.profile?.name || 'Пользователь',
+      title: profileData.title || user?.profile?.title || '',
+      bio: profileData.bio || user?.profile?.bio || '',
+      location: profileData.location || user?.profile?.location || '',
+      hourlyRate: profileData.hourlyRate ? Number(profileData.hourlyRate) : user?.profile?.hourlyRate || 0,
+      experience: profileData.experience || user?.profile?.experience || '',
+      website: profileData.website || user?.profile?.website || '',
+      telegram: profileData.telegram || user?.profile?.telegram || '',
+      github: profileData.github || user?.profile?.github || '',
+      avatar: profileData.avatar || user?.profile?.avatar || '',
+      category: profileData.category || user?.profile?.category || 'other',
+      skills: Array.isArray(profileData.skills) ? profileData.skills : user?.profile?.skills || [],
+      portfolio: Array.isArray(profileData.portfolio) ? profileData.portfolio : user?.profile?.portfolio || [],
+      experienceList: Array.isArray(profileData.experienceList) ? profileData.experienceList : user?.profile?.experienceList || [],
+    };
+
+    // 🔥 УДАЛЯЕМ ПУСТЫЕ СТРОКИ И НУЛЕВЫЕ ЗНАЧЕНИЯ
+    Object.keys(processedData).forEach(key => {
+      if (processedData[key] === '' || processedData[key] === null || processedData[key] === undefined) {
+        delete processedData[key];
+      }
+    });
+
+    console.log('📤 Sending processed data:', processedData);
+
+    const result = await apiService.updateProfile(processedData);
+    console.log('📨 Server response:', result);
+
+    if (result.success) {
+      console.log('✅ Profile updated successfully');
+      
+      const updatedUser = result.data || result.user;
+      if (updatedUser) {
+        // 🔥 ОБНОВЛЯЕМ ЛОКАЛЬНЫЕ ДАННЫЕ
+        const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+        const mergedUser = {
+          ...currentUser,
+          ...updatedUser,
+          profile: {
+            ...currentUser.profile,
+            ...updatedUser.profile,
+            ...processedData // Сохраняем все отправленные данные
+          }
+        };
+        
+        console.log('💾 Saving merged user data:', mergedUser);
+        localStorage.setItem('current_user', JSON.stringify(mergedUser));
+        setUser(mergedUser);
+      }
+      
+      return { 
+        success: true, 
+        user: updatedUser,
+        message: result.message 
+      };
+    } else {
+      throw new Error(result.error || 'Failed to update profile');
+    }
+
   } catch (error) {
+    console.error('❌ Update profile error:', error);
     throw error;
   }
-};
+}, [user]);
+
+  const addSkill = useCallback(async (skill, level = 'intermediate') => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentSkills = user.profile?.skills || [];
+      const updatedSkills = [...currentSkills, { skill, level }];
+      
+      const result = await updateProfile({ skills: updatedSkills });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error adding skill:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  const removeSkill = useCallback(async (skillToRemove) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentSkills = user.profile?.skills || [];
+      const updatedSkills = currentSkills.filter(s => s.skill !== skillToRemove);
+      
+      const result = await updateProfile({ skills: updatedSkills });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error removing skill:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  const addPortfolioItem = useCallback(async (item) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentPortfolio = user.profile?.portfolio || [];
+      const updatedPortfolio = [...currentPortfolio, item];
+      
+      const result = await updateProfile({ portfolio: updatedPortfolio });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error adding portfolio item:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  const removePortfolioItem = useCallback(async (itemId) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentPortfolio = user.profile?.portfolio || [];
+      const updatedPortfolio = currentPortfolio.filter(item => item.id !== itemId);
+      
+      const result = await updateProfile({ portfolio: updatedPortfolio });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error removing portfolio item:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  const addExperience = useCallback(async (experience) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentExperience = user.profile?.experienceList || [];
+      const updatedExperience = [...currentExperience, experience];
+      
+      const result = await updateProfile({ experienceList: updatedExperience });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error adding experience:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  const removeExperience = useCallback(async (expId) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    try {
+      const currentExperience = user.profile?.experienceList || [];
+      const updatedExperience = currentExperience.filter(exp => exp.id !== expId);
+      
+      const result = await updateProfile({ experienceList: updatedExperience });
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error removing experience:', error);
+      throw error;
+    }
+  }, [user, updateProfile]);
+
+  // 🔥 АУТЕНТИФИКАЦИЯ
+  const login = async (email, password) => {
+    try {
+      const response = await apiService.login(email, password);
+      
+      if (response.user && response.token) {
+        setUser(response.user);
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+        return response.user;
+      }
+      throw new Error("Invalid response from server");
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const register = async (userData) => {
     try {
       const response = await apiService.register(userData);
@@ -114,652 +477,96 @@ const login = async (email, password) => {
     }
   };
 
-  // OAuth авторизация
-const oauthLogin = async (provider, code) => {
-  // Четкое разделение демо и реального режима
-  if (isDemoMode || !code || code.startsWith('demo')) {
-    return await quickOAuthLogin(provider);
-  }
-  
-  // Реальный OAuth
-  return await realOAuthLogin(provider, code);
-};
-
-  // Получение OAuth URL для редиректа
-  const getOAuthUrl = (provider, action = 'login') => {
-    return getOAuthUrl(provider, action);
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("current_user");
+    setUser(null);
+    setProjects([]);
   };
 
-  // Быстрый OAuth вход (для демо и тестирования)
-  const quickOAuthLogin = async (provider) => {
+  // 🔥 OAuth функции (упрощенные)
+  const oauthLogin = async (provider, code) => {
     try {
-      setLoading(true);
+      const response = await apiService.oauthLogin(provider, code);
       
-      // Демо-пользователи для тестирования
-      const demoUsers = {
-        google: {
-          email: 'demo.google@freelancehub.ru',
-          name: 'Демо Google Пользователь',
-          role: 'freelancer'
-        },
-        yandex: {
-          email: 'demo.yandex@freelancehub.ru', 
-          name: 'Демо Yandex Пользователь',
-          role: 'freelancer'
-        },
-        vk: {
-          email: 'demo.vk@freelancehub.ru',
-          name: 'Демо VK Пользователь',
-          role: 'client'
-        }
-      };
-
-      const demoUser = demoUsers[provider];
-      
-      if (!demoUser) {
-        throw new Error('Неизвестный OAuth провайдер');
+      if (response.user && response.token) {
+        setUser(response.user);
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("current_user", JSON.stringify(response.user));
+        return { 
+          success: true, 
+          user: response.user,
+          isDemo: response.isDemo || false 
+        };
       }
-
-      // Создаем демо-пользователя
-      const mockUser = {
-        id: Date.now(),
-        email: demoUser.email,
-        fullName: demoUser.name,
-        role: demoUser.role,
-        profile: {
-          avatar: null,
-          bio: `Демо пользователь через ${provider}`,
-          skills: demoUser.role === 'freelancer' ? ['JavaScript', 'React', 'CSS'] : [],
-          rating: 4.8,
-          completedProjects: demoUser.role === 'freelancer' ? 12 : 0,
-          isEmailVerified: true,
-          oauthProvider: provider
-        },
-        isOAuth: true,
-        isDemo: true
-      };
-
-      const mockToken = `demo_oauth_token_${provider}_${Date.now()}`;
-
-      setUser(mockUser);
-      localStorage.setItem("token", mockToken);
-      localStorage.setItem("current_user", JSON.stringify(mockUser));
-
-      return { 
-        success: true, 
-        user: mockUser,
-        isDemo: true 
-      };
-
+      
+      throw new Error("Invalid OAuth response");
     } catch (error) {
-      console.error("Quick OAuth login error:", error);
+      console.error("OAuth login error:", error);
       return { 
         success: false, 
         error: error.message 
       };
-    } finally {
-      setLoading(false);
     }
   };
 
-  const logout = () => {
-    // Очищаем все данные аутентификации
-    localStorage.removeItem("token");
-    localStorage.removeItem("current_user");
-    localStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("oauthAction");
-    sessionStorage.removeItem("oauthProvider");
-    
-    setUser(null);
-    setProjects([]);
-    
-    // Вызываем API логаут если нужно
-    if (apiService.logout) {
-      apiService.logout().catch(console.error);
-    }
+  const getOAuthUrl = (provider) => {
+    // 🔥 ЗАМЕНИТЕ НА ВАШИ REAL OAUTH URLS
+    const urls = {
+      yandex: `${API_BASE_URL}/api/auth/oauth/yandex`,
+      google: `${API_BASE_URL}/api/auth/oauth/google`, 
+      vk: `${API_BASE_URL}/api/auth/oauth/vk`
+    };
+    return urls[provider] || `${API_BASE_URL}/api/auth/oauth/${provider}`;
   };
 
-  // Функции для работы с профилем
-  const updateProfile = async (profileData) => {
-    try {
-      console.log('🔄 Updating profile with:', profileData);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Токен авторизации не найден');
-      }
-
-      const response = await fetch('/api/users/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(profileData),
-      });
-
-      const result = await response.json();
-      console.log('📨 Server response:', result);
-
-      if (result.status === 'success') {
-        console.log('✅ Server returned success');
-        
-        // 🔥 ВАЖНО: Обновляем localStorage с данными с сервера
-        const updatedUser = result.user;
-        console.log('💾 Saving server data to localStorage:', updatedUser);
-        
-        localStorage.setItem('current_user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-        
-        return { 
-          success: true, 
-          user: updatedUser 
-        };
-      } else {
-        throw new Error(result.message || 'Failed to update profile');
-      }
-
-    } catch (error) {
-      console.error('❌ Update profile error:', error);
-      throw error;
-    }
-  };
-
-  // Функция для связывания OAuth с существующим аккаунтом
-  const linkOAuthAccount = async (provider, code) => {
-    if (!user) {
-      throw new Error("User must be logged in to link OAuth account");
-    }
-
-    // Для демо-режима просто обновляем профиль
-    if (user.isDemo) {
-      const updatedUser = {
-        ...user,
-        profile: {
-          ...user.profile,
-          linkedOAuthProviders: [
-            ...(user.profile.linkedOAuthProviders || []),
-            provider
-          ]
-        }
-      };
-      
-      setUser(updatedUser);
-      localStorage.setItem("current_user", JSON.stringify(updatedUser));
-      return { success: true };
-    }
-
-    try {
-      const response = await apiService.linkOAuthAccount(provider, code);
-      
-      if (response.success) {
-        const updatedUser = {
-          ...user,
-          profile: {
-            ...user.profile,
-            linkedOAuthProviders: [
-              ...(user.profile.linkedOAuthProviders || []),
-              provider
-            ]
-          }
-        };
-        
-        setUser(updatedUser);
-        localStorage.setItem("current_user", JSON.stringify(updatedUser));
-        
-        return { success: true };
-      }
-    } catch (error) {
-      console.error("Error linking OAuth account:", error);
-      throw error;
-    }
-  };
-
-  // Функция для отвязывания OAuth аккаунта
-  const unlinkOAuthAccount = async (provider) => {
-    if (!user) {
-      throw new Error("User must be logged in to unlink OAuth account");
-    }
-
-    // Для демо-режима
-    if (user.isDemo) {
-      const updatedUser = {
-        ...user,
-        profile: {
-          ...user.profile,
-          linkedOAuthProviders: (user.profile.linkedOAuthProviders || [])
-            .filter(p => p !== provider)
-        }
-      };
-      
-      setUser(updatedUser);
-      localStorage.setItem("current_user", JSON.stringify(updatedUser));
-      return { success: true };
-    }
-
-    try {
-      const response = await apiService.unlinkOAuthAccount(provider);
-      
-      if (response.success) {
-        const updatedUser = {
-          ...user,
-          profile: {
-            ...user.profile,
-            linkedOAuthProviders: (user.profile.linkedOAuthProviders || [])
-              .filter(p => p !== provider)
-          }
-        };
-        
-        setUser(updatedUser);
-        localStorage.setItem("current_user", JSON.stringify(updatedUser));
-        
-        return { success: true };
-      }
-    } catch (error) {
-      console.error("Error unlinking OAuth account:", error);
-      throw error;
-    }
-  };
-
-  // Проверка, связан ли OAuth провайдер с аккаунтом
-  const isOAuthLinked = (provider) => {
-    return user?.profile?.linkedOAuthProviders?.includes(provider) || false;
-  };
-
-  // Остальные функции (createProject, getMyProjects, и т.д.) остаются без изменений
-  const createProject = useCallback(
-    async (projectData) => {
-      if (!user) return { success: false, error: "User not authenticated" };
-
+  // 🔥 ЗАГРУЗКА ДАННЫХ ПРИ ЗАПУСКЕ
+  useEffect(() => {
+    const initializeUser = async () => {
       try {
-        // Если есть API и не демо-пользователь
-        if (apiService.createProject && !user.isDemo) {
-          const response = await apiService.createProject(projectData);
-          const newProject = response.project;
-          const updatedProjects = [...projects, newProject];
-          setProjects(updatedProjects);
-          return { success: true, project: newProject };
-        } else {
-          // Локальное создание для демо-пользователей
-          const newProject = {
-            id: Date.now(),
-            ...projectData,
-            client_id: user.id,
-            client: {
-              id: user.id,
-              profile: user.profile,
-            },
-            status: "open",
-            views: 0,
-            responses: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
+        const token = localStorage.getItem("token");
+        const savedUser = localStorage.getItem("current_user");
 
-          const updatedProjects = [...projects, newProject];
-          setProjects(updatedProjects);
-          saveProjectsToStorage(updatedProjects);
-          return { success: true, project: newProject };
+        if (token && savedUser) {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          
+          // Проверяем актуальность токена
+          try {
+            const currentUser = await apiService.getCurrentUser();
+            if (currentUser.user) {
+              setUser(currentUser.user);
+              localStorage.setItem("current_user", JSON.stringify(currentUser.user));
+            }
+          } catch (error) {
+            console.log('Token might be expired, keeping local user data');
+          }
         }
       } catch (error) {
-        console.error("Error creating project:", error);
-        return { success: false, error: error.message };
+        console.error("Error initializing user:", error);
+      } finally {
+        setLoading(false);
       }
-    },
-    [user, projects]
-  );
+    };
 
-  const getMyProjects = useCallback(async () => {
-    if (!user) return [];
-
-    try {
-      if (apiService.getMyProjects && !user.isDemo) {
-        const response = await apiService.getMyProjects();
-        
-        if (Array.isArray(response)) {
-          return response;
-        } else if (response && Array.isArray(response.projects)) {
-          return response.projects;
-        } else if (response && Array.isArray(response.data)) {
-          return response.data;
-        } else {
-          console.warn("Unexpected response format for my projects:", response);
-          return [];
-        }
-      } else {
-        // Локальная фильтрация для демо-пользователей
-        const localProjects = Array.isArray(projects)
-          ? projects.filter((project) => project.client_id === user.id)
-          : [];
-        return localProjects;
-      }
-    } catch (error) {
-      console.error("Error getting my projects:", error);
-      const localProjects = Array.isArray(projects)
-        ? projects.filter((project) => project.client_id === user.id)
-        : [];
-      return localProjects;
-    }
-  }, [user, projects]);
-
-  // Остальные функции остаются без изменений...
-  const getMyResponses = useCallback(async () => {
-    if (!user || user.role !== "freelancer") return [];
-
-    try {
-      if (apiService.getMyResponses && !user.isDemo) {
-        const response = await apiService.getMyResponses();
-        return response.responses || [];
-      } else {
-        // Локальная фильтрация для демо-пользователей
-        return projects
-          .filter((project) =>
-            project.responses?.some(
-              (response) => response.freelancer_id === user.id
-            )
-          )
-          .map((project) => ({
-            project,
-            response: project.responses.find((r) => r.freelancer_id === user.id),
-          }));
-      }
-    } catch (error) {
-      console.error("Error getting my responses:", error);
-      return projects
-        .filter((project) =>
-          project.responses?.some(
-            (response) => response.freelancer_id === user.id
-          )
-        )
-        .map((project) => ({
-          project,
-          response: project.responses.find((r) => r.freelancer_id === user.id),
-        }));
-    }
-  }, [user, projects]);
-
-  const getUserStats = useCallback(async () => {
-    if (!user) return null;
-
-    try {
-      const [myProjects, myResponses] = await Promise.all([
-        getMyProjects(),
-        getMyResponses(),
-      ]);
-
-      if (user.role === "client") {
-        return {
-          totalProjects: myProjects.length,
-          activeProjects: myProjects.filter((p) => p.status === "open").length,
-          completedProjects: myProjects.filter((p) => p.status === "completed")
-            .length,
-          totalResponses: myProjects.reduce(
-            (acc, project) => acc + (project.responses?.length || 0),
-            0
-          ),
-          rating: user.profile.rating || 5.0,
-        };
-      } else {
-        return {
-          completedProjects: user.profile.completedProjects || 0,
-          activeResponses: myResponses.filter(
-            (r) => r.response?.status === "pending"
-          ).length,
-          acceptedResponses: myResponses.filter(
-            (r) => r.response?.status === "accepted"
-          ).length,
-          totalResponses: myResponses.length,
-          rating: user.profile.rating || 5.0,
-        };
-      }
-    } catch (error) {
-      console.error("Error calculating stats:", error);
-      return {
-        totalProjects: 0,
-        activeProjects: 0,
-        completedProjects: 0,
-        totalResponses: 0,
-        activeResponses: 0,
-        acceptedResponses: 0,
-        rating: user.profile.rating || 5.0,
-      };
-    }
-  }, [user, getMyProjects, getMyResponses]);
-
-  // Остальные вспомогательные функции...
-  const addSkill = useCallback(
-    async (skill, level) => {
-      if (!user) return;
-
-      const updatedSkills = [...(user.profile.skills || []), { skill, level }];
-      const result = await updateProfile({ skills: updatedSkills });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const removeSkill = useCallback(
-    async (skillToRemove) => {
-      if (!user) return;
-
-      const updatedSkills =
-        user.profile.skills?.filter((s) => s.skill !== skillToRemove) || [];
-      const result = await updateProfile({ skills: updatedSkills });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const addPortfolioItem = useCallback(
-    async (item) => {
-      if (!user) return;
-
-      const updatedPortfolio = [...(user.profile.portfolio || []), item];
-      const result = await updateProfile({ portfolio: updatedPortfolio });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const removePortfolioItem = useCallback(
-    async (itemId) => {
-      if (!user) return;
-
-      const updatedPortfolio =
-        user.profile.portfolio?.filter((item) => item.id !== itemId) || [];
-      const result = await updateProfile({ portfolio: updatedPortfolio });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const addExperience = useCallback(
-    async (experience) => {
-      if (!user) return;
-
-      const updatedExperience = [
-        ...(user.profile.experienceList || []),
-        experience,
-      ];
-      const result = await updateProfile({ experienceList: updatedExperience });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const removeExperience = useCallback(
-    async (expId) => {
-      if (!user) return;
-
-      const updatedExperience =
-        user.profile.experienceList?.filter((exp) => exp.id !== expId) || [];
-      const result = await updateProfile({ experienceList: updatedExperience });
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-    },
-    [user, updateProfile]
-  );
-
-  const respondToProject = useCallback(
-    async (projectId, responseData) => {
-      if (!user || user.role !== "freelancer") {
-        return {
-          success: false,
-          error: "Only freelancers can respond to projects",
-        };
-      }
-
-      try {
-        if (apiService.respondToProject && !user.isDemo) {
-          const response = await apiService.respondToProject(
-            projectId,
-            responseData
-          );
-          return { success: true, response: response.response };
-        } else {
-          // Локальный отклик для демо-пользователей
-          const projectIndex = projects.findIndex((p) => p.id === projectId);
-          if (projectIndex === -1) {
-            return { success: false, error: "Project not found" };
-          }
-
-          const project = projects[projectIndex];
-          const existingResponse = project.responses?.find(
-            (response) => response.freelancer_id === user.id
-          );
-
-          if (existingResponse) {
-            return {
-              success: false,
-              error: "You have already responded to this project",
-            };
-          }
-
-          const newResponse = {
-            id: Date.now(),
-            freelancer_id: user.id,
-            freelancer: {
-              id: user.id,
-              profile: user.profile,
-            },
-            ...responseData,
-            status: "pending",
-            created_at: new Date().toISOString(),
-          };
-
-          const updatedProject = {
-            ...project,
-            responses: [...(project.responses || []), newResponse],
-          };
-
-          const updatedProjects = [...projects];
-          updatedProjects[projectIndex] = updatedProject;
-
-          setProjects(updatedProjects);
-          saveProjectsToStorage(updatedProjects);
-
-          return { success: true, response: newResponse };
-        }
-      } catch (error) {
-        console.error("Error responding to project:", error);
-        return { success: false, error: error.message };
-      }
-    },
-    [user, projects]
-  );
-
-  const updateResponseStatus = useCallback(
-    async (projectId, responseId, status) => {
-      if (!user) return { success: false, error: "User not authenticated" };
-
-      try {
-        if (apiService.updateResponseStatus && !user.isDemo) {
-          const response = await apiService.updateResponseStatus(
-            projectId,
-            responseId,
-            status
-          );
-          return { success: true, response: response.response };
-        } else {
-          // Локальное обновление для демо-пользователей
-          const projectIndex = projects.findIndex((p) => p.id === projectId);
-          if (projectIndex === -1) {
-            return { success: false, error: "Project not found" };
-          }
-
-          const project = projects[projectIndex];
-          const responseIndex = project.responses?.findIndex(
-            (r) => r.id === responseId
-          );
-
-          if (responseIndex === -1) {
-            return { success: false, error: "Response not found" };
-          }
-
-          const updatedProject = {
-            ...project,
-            responses: project.responses.map((r, idx) =>
-              idx === responseIndex ? { ...r, status } : r
-            ),
-          };
-
-          if (status === "accepted") {
-            updatedProject.status = "in_progress";
-          }
-
-          const updatedProjects = [...projects];
-          updatedProjects[projectIndex] = updatedProject;
-
-          setProjects(updatedProjects);
-          saveProjectsToStorage(updatedProjects);
-
-          return {
-            success: true,
-            response: updatedProject.responses[responseIndex],
-          };
-        }
-      } catch (error) {
-        console.error("Error updating response status:", error);
-        return { success: false, error: error.message };
-      }
-    },
-    [projects]
-  );
+    initializeUser();
+  }, []);
 
   const value = {
-    // Основные функции аутентификации
+    // Основные данные
     user,
     loading,
+    
+    // Аутентификация
     login,
     register,
     logout,
 
-    // OAuth функции
+    // OAuth
     oauthLogin,
     getOAuthUrl,
-    quickOAuthLogin,
-    linkOAuthAccount,
-    unlinkOAuthAccount,
-    isOAuthLinked,
 
-    // Функции профиля
+    // Профиль
     updateProfile,
     addSkill,
     removeSkill,
@@ -768,16 +575,15 @@ const oauthLogin = async (provider, code) => {
     addExperience,
     removeExperience,
 
-    // Функции проектов
+    // Проекты и отклики
     projects,
     createProject,
     getMyProjects,
     getMyResponses,
     getUserStats,
-    respondToProject,
-    updateResponseStatus,
+    updateResponse,
 
-    // Вспомогательные функции
+    // Вспомогательные
     setUser,
   };
 

@@ -57,7 +57,7 @@ function Header() {
     }
     return (
       <>
-        Nexus<span className="logo-accent">Hub</span>
+        Freelance<span className="logo-accent">Hub</span>
       </>
     );
   };

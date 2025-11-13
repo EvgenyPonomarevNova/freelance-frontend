@@ -1,6 +1,7 @@
 // pages/FreelancersPage/FreelancersPage.jsx
 import './FreelancersPage.scss'
 import { useState, useEffect, useMemo } from 'react'
+import { apiService } from '../../services/api'
 import FreelancerCard from '../../components/FreelancerCard/FreelancerCard'
 
 function FreelancersPage() {
@@ -19,55 +20,55 @@ function FreelancersPage() {
     englishLevel: ''
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  })
 
   useEffect(() => {
     loadFreelancers()
-  }, [])
+  }, [pagination.page, pagination.limit])
 
-  const loadFreelancers = () => {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('nexus_users') || '[]')
-      const freelancerUsers = users
-        .filter(user => user.role === 'freelancer')
-        .map(user => ({
-          ...user,
-          profile: user.profile || {
-            name: user.fullName || 'Фрилансер',
-            bio: '',
-            skills: [],
-            rating: 4.5 + Math.random() * 0.5, // Рандомный рейтинг для демо
-            completedProjects: Math.floor(Math.random() * 50),
-            hourlyRate: 500 + Math.floor(Math.random() * 2000),
-            location: ['Москва', 'Санкт-Петербург', 'Новосибирск', 'Удаленно'][Math.floor(Math.random() * 4)],
-            experience: ['junior', 'middle', 'senior'][Math.floor(Math.random() * 3)],
-            englishLevel: ['beginner', 'intermediate', 'advanced', 'fluent'][Math.floor(Math.random() * 4)],
-            responseRate: 80 + Math.floor(Math.random() * 20),
-            online: Math.random() > 0.5
-          }
-        }))
+  const loadFreelancers = async () => {
+    try {
+      setLoading(true)
       
-      setFreelancers(freelancerUsers)
+      // Подготавливаем параметры для API
+      const apiFilters = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...(filters.category && { category: filters.category }),
+        ...(searchTerm && { search: searchTerm })
+      }
+
+      const response = await apiService.getFreelancers(apiFilters)
+      
+      if (response.success) {
+        setFreelancers(response.data || [])
+        setPagination(prev => ({
+          ...prev,
+          total: response.pagination?.total || 0,
+          pages: response.pagination?.pages || 1
+        }))
+      } else {
+        console.error('Failed to load freelancers:', response.error)
+        setFreelancers([])
+      }
+    } catch (error) {
+      console.error('Error loading freelancers:', error)
+      setFreelancers([])
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
-  // Фильтрация и сортировка
+  // Фильтрация на фронтенде для дополнительных фильтров
   const filteredAndSortedFreelancers = useMemo(() => {
     let filtered = freelancers.filter(freelancer => {
       const profile = freelancer.profile || {}
       
-      // Поиск по тексту
-      const matchesSearch = searchTerm === '' || 
-        profile.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.skills?.some(skill => {
-          const skillName = typeof skill === 'string' ? skill : skill.skill || skill.name
-          return skillName?.toLowerCase().includes(searchTerm.toLowerCase())
-        })
-
-      // Фильтр по категории
-      const matchesCategory = !filters.category || profile.category === filters.category
-
       // Фильтр по рейтингу
       const matchesRating = !filters.rating || (profile.rating || 0) >= parseFloat(filters.rating)
 
@@ -78,7 +79,7 @@ function FreelancersPage() {
 
       // Фильтр по местоположению
       const matchesLocation = !filters.location || 
-        profile.location?.toLowerCase().includes(filters.location.toLowerCase())
+        (profile.location?.toLowerCase() || '').includes(filters.location.toLowerCase())
 
       // Фильтр по опыту
       const matchesExperience = !filters.experience || profile.experience === filters.experience
@@ -86,8 +87,17 @@ function FreelancersPage() {
       // Фильтр по английскому
       const matchesEnglish = !filters.englishLevel || profile.englishLevel === filters.englishLevel
 
-      return matchesSearch && matchesCategory && matchesRating && matchesRateMin && 
-             matchesRateMax && matchesLocation && matchesExperience && matchesEnglish
+      // Фильтр по навыкам
+      const matchesSkills = filters.skills.length === 0 || 
+        filters.skills.every(filterSkill => 
+          (profile.skills || []).some(profileSkill => {
+            const skillName = typeof profileSkill === 'string' ? profileSkill : profileSkill.skill || profileSkill.name
+            return skillName.toLowerCase().includes(filterSkill.toLowerCase())
+          })
+        )
+
+      return matchesRating && matchesRateMin && matchesRateMax && 
+             matchesLocation && matchesExperience && matchesEnglish && matchesSkills
     })
 
     // Сортировка
@@ -105,7 +115,7 @@ function FreelancersPage() {
         case 'rate_high':
           return (profileB.hourlyRate || 0) - (profileA.hourlyRate || 0)
         case 'name':
-          return (profileA.name || '').localeCompare(profileB.name || '')
+          return (profileA.name || a.fullName || '').localeCompare(profileB.name || b.fullName || '')
         case 'newest':
           return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         default:
@@ -114,7 +124,7 @@ function FreelancersPage() {
     })
 
     return filtered
-  }, [freelancers, searchTerm, sortBy, filters])
+  }, [freelancers, sortBy, filters])
 
   const categories = [
     { value: '', label: 'Все категории' },
@@ -175,6 +185,7 @@ function FreelancersPage() {
       englishLevel: ''
     })
     setSearchTerm('')
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const toggleSkill = (skill) => {
@@ -184,6 +195,15 @@ function FreelancersPage() {
         ? prev.skills.filter(s => s !== skill)
         : [...prev.skills, skill]
     }))
+  }
+
+  const handleSearch = () => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+    loadFreelancers()
+  }
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
   }
 
   const activeFiltersCount = Object.values(filters).filter(value => 
@@ -200,7 +220,7 @@ function FreelancersPage() {
         </div>
         <div className="header-stats">
           <div className="stat">
-            <strong>{filteredAndSortedFreelancers.length}</strong>
+            <strong>{pagination.total}</strong>
             <span>фрилансеров найдено</span>
           </div>
         </div>
@@ -208,7 +228,6 @@ function FreelancersPage() {
 
       {/* Поиск и фильтры */}
       <div className="search-filters-section">
-        {/* Строка поиска и сортировки */}
         <div className="search-sort-row">
           <div className="search-box">
             <input
@@ -216,8 +235,9 @@ function FreelancersPage() {
               placeholder="Поиск по имени, навыкам, специализации..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <button className="search-btn">🔍</button>
+            <button className="search-btn" onClick={handleSearch}>🔍</button>
           </div>
           
           <div className="sort-controls">
@@ -245,7 +265,6 @@ function FreelancersPage() {
           </div>
         </div>
 
-        {/* Расширенные фильтры */}
         {showFilters && (
           <div className="advanced-filters">
             <div className="filters-grid">
@@ -336,7 +355,6 @@ function FreelancersPage() {
               </div>
             </div>
 
-            {/* Популярные навыки */}
             <div className="skills-filter">
               <label>Популярные навыки</label>
               <div className="skills-grid">
@@ -372,7 +390,10 @@ function FreelancersPage() {
             <button
               key={category.value}
               className={`quick-filter ${filters.category === category.value ? 'active' : ''}`}
-              onClick={() => setFilters({...filters, category: category.value})}
+              onClick={() => {
+                setFilters({...filters, category: category.value})
+                setPagination(prev => ({ ...prev, page: 1 }))
+              }}
             >
               {category.label}
             </button>
@@ -397,9 +418,23 @@ function FreelancersPage() {
             
             {/* Пагинация */}
             <div className="pagination">
-              <button className="pagination-btn disabled">← Назад</button>
-              <span className="pagination-info">Страница 1 из 1</span>
-              <button className="pagination-btn disabled">Вперед →</button>
+              <button 
+                className={`pagination-btn ${pagination.page === 1 ? 'disabled' : ''}`}
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+              >
+                ← Назад
+              </button>
+              <span className="pagination-info">
+                Страница {pagination.page} из {pagination.pages}
+              </span>
+              <button 
+                className={`pagination-btn ${pagination.page === pagination.pages ? 'disabled' : ''}`}
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+              >
+                Вперед →
+              </button>
             </div>
           </>
         ) : (
