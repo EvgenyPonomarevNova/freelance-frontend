@@ -8,6 +8,18 @@ import PortfolioItem from "../../components/PortfolioItem/PortfolioItem";
 import LoadingSpinner from "../../components/UI/LoadingSpinner";
 import EmptyState from "../../components/UI/EmptyState";
 
+// Импортируем SVG иконки
+import WebsiteIcon from "../../../public/images/icons/WebsiteIcon";
+import TelegramIcon from "../../../public/images/icons/TelegramIcon";
+import GithubIcon from "../../../public/images/icons/GithubIcon";
+import LocationIcon from "../../../public/images/icons/LocationIcon";
+import MoneyIcon from "../../../public/images/icons/MoneyIcon";
+import ExperienceIcon from "../../../public/images/icons/ExperienceIcon";
+import RatingIcon from "../../../public/images/icons/RatingIcon";
+import ProjectsIcon from "../../../public/images/icons/ProjectsIcon";
+import SkillsIcon from "../../../public/images/icons/SkillsIcon";
+import ResponsesIcon from "../../../public/images/icons/ResponsesIcon";
+
 // Константы для унификации структуры данных
 const PROFILE_DATA_SCHEMA = {
   name: "",
@@ -529,11 +541,10 @@ function ProfilePage() {
                   <span>📷</span>
                   <p>Сменить фото</p>
                 </div>
-                {/* 🔥 ИСПРАВЛЕННЫЙ INPUT */}
                 <input
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleAvatarChange} // Используем handleAvatarChange
+                  onChange={handleAvatarChange}
                   accept="image/*"
                   style={{ display: "none" }}
                 />
@@ -551,7 +562,10 @@ function ProfilePage() {
               </div>
 
               {user.profile.location && (
-                <p className="location">📍 {user.profile.location}</p>
+                <p className="location">
+                  <LocationIcon />
+                  {user.profile.location}
+                </p>
               )}
               {user.profile.bio && (
                 <p className="profile-description">{user.profile.bio}</p>
@@ -719,11 +733,10 @@ function ProfilePage() {
               <span>📷</span>
               <p>Сменить фото</p>
             </div>
-            {/* 🔥 ИСПРАВЛЕННЫЙ INPUT */}
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleAvatarChange} // Используем handleAvatarChange
+              onChange={handleAvatarChange}
               accept="image/*"
               style={{ display: "none" }}
             />
@@ -848,17 +861,20 @@ function ProfilePage() {
               <div className="profile-details">
                 {user.profile.hourlyRate && (
                   <span className="detail-item">
-                    💼 {user.profile.hourlyRate} ₽/час
+                    <MoneyIcon />
+                    {user.profile.hourlyRate} ₽/час
                   </span>
                 )}
                 {user.profile.location && (
                   <span className="detail-item">
-                    📍 {user.profile.location}
+                    <LocationIcon />
+                    {user.profile.location}
                   </span>
                 )}
                 {user.profile.experience && (
                   <span className="detail-item">
-                    ⏱️ {user.profile.experience}
+                    <ExperienceIcon />
+                    {user.profile.experience}
                   </span>
                 )}
               </div>
@@ -874,7 +890,8 @@ function ProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      🌐 Website
+                      <WebsiteIcon />
+                      Website
                     </a>
                   )}
                   {user.profile.telegram && (
@@ -884,7 +901,8 @@ function ProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      ✈️ Telegram
+                      <TelegramIcon />
+                      Telegram
                     </a>
                   )}
                   {user.profile.github && (
@@ -894,7 +912,8 @@ function ProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      💻 GitHub
+                      <GithubIcon />
+                      GitHub
                     </a>
                   )}
                 </div>
@@ -905,23 +924,35 @@ function ProfilePage() {
           <div className="profile-stats">
             <div className="stat">
               <span className="stat-value">{stats?.rating || "5.0"}</span>
-              <span className="stat-label">⭐ Рейтинг</span>
+              <span className="stat-label">
+                <RatingIcon />
+                Рейтинг
+              </span>
             </div>
             <div className="stat">
               <span className="stat-value">
                 {stats?.completedProjects || 0}
               </span>
-              <span className="stat-label">✅ Проектов</span>
+              <span className="stat-label">
+                <ProjectsIcon />
+                Проектов
+              </span>
             </div>
             <div className="stat">
               <span className="stat-value">
                 {user.profile.skills?.length || 0}
               </span>
-              <span className="stat-label">🎯 Навыков</span>
+              <span className="stat-label">
+                <SkillsIcon />
+                Навыков
+              </span>
             </div>
             <div className="stat">
               <span className="stat-value">{stats?.activeResponses || 0}</span>
-              <span className="stat-label">📥 Активных откликов</span>
+              <span className="stat-label">
+                <ResponsesIcon />
+                Активных откликов
+              </span>
             </div>
           </div>
         </div>
@@ -963,25 +994,29 @@ function ProfilePage() {
           className={`tab ${activeTab === "skills" ? "active" : ""}`}
           onClick={() => setActiveTab("skills")}
         >
-          🎯 Навыки
+          <SkillsIcon />
+          Навыки
         </button>
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}
           onClick={() => setActiveTab("portfolio")}
         >
-          💼 Портфолио
+          <ProjectsIcon />
+          Портфолио
         </button>
         <button
           className={`tab ${activeTab === "experience" ? "active" : ""}`}
           onClick={() => setActiveTab("experience")}
         >
-          📈 Опыт работы
+          <ExperienceIcon />
+          Опыт работы
         </button>
         <button
           className={`tab ${activeTab === "responses" ? "active" : ""}`}
           onClick={() => setActiveTab("responses")}
         >
-          📥 Мои отклики
+          <ResponsesIcon />
+          Мои отклики
         </button>
       </div>
 
@@ -989,7 +1024,7 @@ function ProfilePage() {
         {activeTab === "skills" && (
           <section className="skills-section">
             <div className="section-header">
-              <h2>🎯 Навыки и технологии</h2>
+              <h2><SkillsIcon /> Навыки и технологии</h2>
               {isEditing && (
                 <div className="add-skill-wrapper">
                   <div className="add-skill">
@@ -1048,7 +1083,7 @@ function ProfilePage() {
                 ))
               ) : (
                 <EmptyState
-                  icon="🎯"
+                  icon={<SkillsIcon />}
                   title="Навыки еще не добавлены"
                   description={isEditing ? "Добавьте свои первые навыки выше" : "Навыки пока не добавлены в профиль"}
                 />
@@ -1060,7 +1095,7 @@ function ProfilePage() {
         {activeTab === "portfolio" && (
           <section className="portfolio-section">
             <div className="section-header">
-              <h2>💼 Портфолио проектов</h2>
+              <h2><ProjectsIcon /> Портфолио проектов</h2>
               {isEditing && (
                 <button
                   className="add-portfolio-btn"
@@ -1214,7 +1249,7 @@ function ProfilePage() {
                 ))
               ) : (
                 <EmptyState
-                  icon="💼"
+                  icon={<ProjectsIcon />}
                   title="Портфолио пустое"
                   description={isEditing ? "Добавьте свои первые проекты в портфолио" : "В портфолио пока нет проектов"}
                 />
@@ -1226,7 +1261,7 @@ function ProfilePage() {
         {activeTab === "experience" && (
           <section className="experience-section">
             <div className="section-header">
-              <h2>📈 Опыт работы</h2>
+              <h2><ExperienceIcon /> Опыт работы</h2>
               {isEditing && (
                 <button
                   className="add-experience-btn"
@@ -1373,7 +1408,7 @@ function ProfilePage() {
                 ))
               ) : (
                 <EmptyState
-                  icon="📈"
+                  icon={<ExperienceIcon />}
                   title="Опыт работы не указан"
                   description={isEditing ? "Добавьте информацию о своем опыте работы" : "Информация об опыте работы пока не добавлена"}
                 />
@@ -1385,7 +1420,7 @@ function ProfilePage() {
         {activeTab === "responses" && (
           <section className="responses-section">
             <div className="section-header">
-              <h2>📥 Мои отклики</h2>
+              <h2><ResponsesIcon /> Мои отклики</h2>
               <div className="response-filters">
                 <select className="filter-select">
                   <option value="all">Все отклики</option>
@@ -1492,7 +1527,7 @@ function ProfilePage() {
                 ))
               ) : (
                 <EmptyState
-                  icon="📥"
+                  icon={<ResponsesIcon />}
                   title="Откликов пока нет"
                   description="Начните откликаться на проекты, и они появятся здесь"
                   action={
